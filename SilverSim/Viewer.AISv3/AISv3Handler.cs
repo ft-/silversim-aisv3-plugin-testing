@@ -8,7 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace SilverSim.LL.AISv3
+namespace SilverSim.Viewer.AISv3
 {
     class AISv3Handler
     {
