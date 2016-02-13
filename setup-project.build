@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<project name="project setup" default="setup">
+	<target name="setup">
+		<call target="setup-workspace" unless="${directory::exists('bin')}"/>
+		<call target="nuget-updates" unless="${file::exists('bin/.nuget-done')}"/>
+		<call target="exe.config"/>
+		<call target="prebuild"/>
+	</target>
+	
+	<target name="setup-workspace" description="Generates sym linked binaries storage">
+		<mkdir dir="../_silversim-binaries-dev_"/>
+		<exec program="windows/junction.exe" if="${platform::is-windows()}">
+			<arg path="bin"/>
+			<arg path="../_silversim-binaries-dev_"/>
+		</exec>
+		<exec program="ln" unless="${platform::is-windows()}">
+			<arg path="-s"/>
+			<arg path="../_silversim-binaries-dev_"/>
+			<arg path="bin"/>
+		</exec>
+	</target>
+	
+	<target name="nuget-updates" description="Updates packages from nuget">
+		<setenv name="PATH" path="${environment::get-variable('PATH')}:${project::get-base-directory()}/windows" if="${platform::is-windows()}"/>
+	
+		<property name="silversim-nuget.packages" value="C5,log4net,MySql.Data"/>
+		<property name="silversim.packages" value="${silversim-nuget.packages},CSJ2K,Nini"/>
+		
+		<property name="silversim.package.C5.path" value="net40"/>
+		<property name="silversim.package.CSJ2K.path" value="net40"/>
+		<property name="silversim.package.log4net.path" value="net40-full"/>
+		<property name="silversim.package.log4net.version" value="2.0.5"/>
+		<property name="silversim.package.MySql.Data.path" value="net40"/>
+		<property name="silversim.package.Nini.path" value="net40"/>
+		
+		<foreach item="String" in="${silversim-nuget.packages}" delim="," property="package">
+			<property name="package-version" value="" overwrite="true"/>
+			<delete dir="libraries/${package}"/>
+			<if test="${property::exists('silversim-nuget.'+package+'.version')}">
+				<property name="package-version" value="${property::get-value('silversim-nuget.'+package+'.version')}" overwrite="true"/>
+			</if>
+			<exec program="nuget">
+				<arg value="install"/>
+				<arg value="${package}"/>
+				<arg value="-o"/>
+				<arg path="libraries"/>
+				<arg value="-ExcludeVersion"/>
+				<arg value="-Version" if="${property::exists('silversim-nuget.'+package+'.version')}"/>
+				<arg value="${package-version}" if="${property::exists('silversim-nuget.'+package+'.version')}"/>
+			</exec>
+		</foreach>
+
+		<foreach item="String" in="${silversim.packages}" delim="," property="package">
+			<echo message="Copying ${package} into bin"/>
+			<copy todir="bin">
+				<fileset basedir="libraries/${package}/lib/${property::get-value('silversim.package.'+package+'.path')}">
+					<include name="*.dll"/>
+				</fileset>
+			</copy>
+		</foreach>
+		<echo message="nuget-updates processed" file="bin/.nuget-done"/>
+	</target>
+	
+	<target name="exe.config" description="Installs exe.config files">
+		<copy todir="bin" file="exe.config/SilverSim.Main.exe.config"/>
+	</target>
+	
+	<target name="prebuild" description="Runs prebuild.exe">
+		<if test="${platform::is-windows()}">
+			<exec program="Prebuild/Prebuild.exe">
+				<arg value="/target"/>
+				<arg value="vs2010"/>
+			</exec>
+		</if>
+		<if test="${not platform::is-windows()}">
+			<exec program="mono">
+				<arg path="Prebuild/Prebuild.exe"/>
+				<arg value="/target"/>
+				<arg value="vs2010"/>
+			</exec>
+		</if>
+	</target>
+	
+	<target name="sonar-project" description="Creates sonar-project">
+		<property name="version" value="alpha" overwrite="false"/>
+		<property name="versionextra" value="" overwrite="false"/>
+		<property name="sonar.modules" value=""/>
+		<property name="sonar.moduledeclarations" value=""/>
+		<foreach item="Folder" in="SilverSim" property="modulefolder">
+			<property name="module" value="SilverSim/${path::get-file-name(modulefolder)}"/>
+			<property name="modulenamespace" value="${string::replace(module, '/', '.')}"/>
+			<property name="moduleid" value="${module}"/>
+			<echo message="Sonar.module ${moduleid}"/>
+			<property name="sonar.modules" value="${sonar.modules}," if="${property::get-value('sonar.modules')!=''}" overwrite="true"/>
+			<property name="sonar.modules" value="${sonar.modules}${moduleid}" overwrite="true"/>
+			<property name="sonar.moduledeclarations" value="${sonar.moduledeclarations}
+${moduleid}.sonar.projectName=${modulenamespace}
+${moduleid}.sonar.projectKey=${modulenamespace}
+${moduleid}.sonar.sources=.
+" overwrite="true"/>
+		</foreach>
+
+		<echo file="sonar-project.properties" message="
+sonar.projectKey=SilverSim
+sonar.projectName=SilverSim
+sonar.projectVersion=${version}${versionextra}
+sonar.sourceEncoding=UTF-8
+sonar.modules=${sonar.modules}
+${sonar.moduledeclarations}
+"/>
+	</target>
+	
+	<target name="build" description="Runs msbuild/xbuild">
+		<call target="setup"/>
+		<if test="${platform::is-windows()}">
+			<exec program="windows/createcompile.bat">
+			</exec>
+			<exec program="compile.bat" workingdir="." basedir=".">
+			</exec>
+		</if>
+		<if test="${platform::is-unix()}">
+			<exec program="xbuild" workingdir=".">
+				<arg value="/p:Configuration=Debug" if="${property::exists('debug-build')}"/>
+			</exec>
+		</if>
+	</target>
+</project>
