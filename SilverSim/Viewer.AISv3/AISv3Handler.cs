@@ -256,6 +256,28 @@ namespace SilverSim.Viewer.AISv3
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
+
+            InventoryItem item;
+            if(!m_InventoryService.Item.TryGetValue(m_AgentID, itemid, out item))
+            {
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
+                return;
+            }
+
+            Map resmap;
+            if(item.AssetType == AssetType.Link)
+            {
+                resmap = new Map();
+            }
+            else if(item.AssetType == AssetType.LinkFolder)
+            {
+                resmap = new Map();
+            }
+            else
+            {
+                resmap = item.ToAisV3();
+            }
+            SuccessResponse(req, resmap);
         }
 
         void ItemHandler_Patch(HttpRequest req, string[] elements, string[] options)
