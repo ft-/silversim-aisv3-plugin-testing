@@ -26,6 +26,28 @@ namespace SilverSim.Viewer.AISv3
         InventoryServiceInterface m_InventoryService;
         UUID m_AgentID;
 
+        enum AisErrorCode
+        {
+            InvalidRequest = 0,
+            InvalidShape = 1,
+            InvalidDepth = 2,
+            BrokenLink = 3,
+            NotFound = 4,
+            AgentNotFound = 5,
+            NoInventoryRoot = 6,
+            MethodNotAllowed = 7,
+            Conflict = 8,
+            Gone = 9,
+            ConditionFailed = 10,
+            InternalError = 11,
+            QueryFailed = 12,
+            QueryExpectationFailed = 13,
+            InvalidPermissions = 14,
+            NotSupported = 15,
+            Unknown = 16,
+            UnsupportedMedia = 17
+        }
+
         public AISv3Handler(string prefixurl, InventoryServiceInterface inventoryService, UUID agentId)
         {
             m_PrefixUrl = prefixurl;
@@ -54,8 +76,14 @@ namespace SilverSim.Viewer.AISv3
             SuccessResponse(req, new Map());
         }
 
-        void ErrorResponse(HttpRequest req, HttpStatusCode code, string description, Map m)
+        void ErrorResponse(HttpRequest req, HttpStatusCode code, AisErrorCode errorcode, string description)
         {
+            ErrorResponse(req, code, errorcode, description, new Map());
+        }
+
+        void ErrorResponse(HttpRequest req, HttpStatusCode code, AisErrorCode errorcode, string description, Map m)
+        {
+            m.Add("error_code", (int)errorcode);
             using (MemoryStream ms = new MemoryStream())
             {
                 LlsdXml.Serialize(m, ms);
@@ -192,7 +220,7 @@ namespace SilverSim.Viewer.AISv3
             string[] options;
             if(!TrySplitURL(RawUrl, out elements, out options) || elements.Length != 2)
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
             switch(req.Method)
@@ -209,16 +237,12 @@ namespace SilverSim.Viewer.AISv3
                     ItemHandler_Copy(req, elements, options);
                     break;
 
-                case "MOVE":
-                    ItemHandler_Move(req, elements, options);
-                    break;
-
                 case "DELETE":
                     ItemHandler_Delete(req, elements, options);
                     break;
 
                 default:
-                    req.ErrorResponse(HttpStatusCode.MethodNotAllowed, "Method not allowed");
+                    ErrorResponse(req, HttpStatusCode.MethodNotAllowed, AisErrorCode.MethodNotAllowed, "Method not allowed");
                     break;
             }
         }
@@ -229,7 +253,7 @@ namespace SilverSim.Viewer.AISv3
 
             if (!UUID.TryParse(elements[1], out itemid))
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
         }
@@ -238,7 +262,7 @@ namespace SilverSim.Viewer.AISv3
         {
             if (req.ContentType != "application/llsd+xml")
             {
-                req.ErrorResponse(HttpStatusCode.UnsupportedMediaType, "Unsupported media type");
+                ErrorResponse(req, HttpStatusCode.UnsupportedMediaType, AisErrorCode.UnsupportedMedia, "Unsupported media type");
                 return;
             }
 
@@ -246,7 +270,7 @@ namespace SilverSim.Viewer.AISv3
 
             if (!UUID.TryParse(elements[1], out itemid))
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
 
@@ -260,7 +284,7 @@ namespace SilverSim.Viewer.AISv3
             }
             catch
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
         }
@@ -271,14 +295,14 @@ namespace SilverSim.Viewer.AISv3
 
             if (!UUID.TryParse(elements[1], out itemid))
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
 
             string destinationurl = req["Destination"];
             if (!destinationurl.StartsWith(m_PrefixUrl))
             {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Destination category not found");
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
                 return;
             }
             destinationurl = destinationurl.Substring(m_PrefixUrlLength);
@@ -286,13 +310,13 @@ namespace SilverSim.Viewer.AISv3
             string[] destoptions;
             if (!TrySplitURL(destinationurl, out destelements, out destoptions))
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
 
             if (destelements[0] != "category")
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
             InventoryFolder destFolder;
@@ -302,19 +326,19 @@ namespace SilverSim.Viewer.AISv3
             }
             catch (KeyNotFoundException)
             {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Destination category not found");
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
                 return;
             }
             catch
             {
-                req.ErrorResponse(HttpStatusCode.InternalServerError, "Internal Server Error");
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
 
             InventoryItem item;
             if (!m_InventoryService.Item.TryGetValue(m_AgentID, itemid, out item))
             {
-                req.ErrorResponse(HttpStatusCode.Gone, "Source item gone");
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source item gone");
                 return;
             }
             item.ID = UUID.Random;
@@ -326,71 +350,7 @@ namespace SilverSim.Viewer.AISv3
             }
             catch
             {
-                req.ErrorResponse(HttpStatusCode.Forbidden, "Forbidden");
-                return;
-            }
-            SuccessResponse(req);
-        }
-
-        void ItemHandler_Move(HttpRequest req, string[] elements, string[] options)
-        {
-            UUID itemid;
-
-            if (!UUID.TryParse(elements[1], out itemid))
-            {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
-                return;
-            }
-
-            string destinationurl = req["Destination"];
-            if (!destinationurl.StartsWith(m_PrefixUrl))
-            {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Destination category not found");
-                return;
-            }
-            destinationurl = destinationurl.Substring(m_PrefixUrlLength);
-            string[] destelements;
-            string[] destoptions;
-            if (!TrySplitURL(destinationurl, out destelements, out destoptions))
-            {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
-                return;
-            }
-
-            if (destelements[0] != "category")
-            {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
-                return;
-            }
-            InventoryFolder destFolder;
-            try
-            {
-                destFolder = FindFolder(req, destelements[1]);
-            }
-            catch (KeyNotFoundException)
-            {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Destination category not found");
-                return;
-            }
-            catch
-            {
-                req.ErrorResponse(HttpStatusCode.InternalServerError, "Internal Server Error");
-                return;
-            }
-
-            if(!m_InventoryService.Item.ContainsKey(m_AgentID, itemid))
-            {
-                req.ErrorResponse(HttpStatusCode.Gone, "Source item gone");
-                return;
-            }
-
-            try
-            {
-                m_InventoryService.Item.Move(m_AgentID, itemid, destFolder.ID);
-            }
-            catch
-            {
-                req.ErrorResponse(HttpStatusCode.Forbidden, "Forbidden");
+                ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.QueryFailed, "Forbidden");
                 return;
             }
             SuccessResponse(req);
@@ -402,7 +362,7 @@ namespace SilverSim.Viewer.AISv3
 
             if (!UUID.TryParse(elements[1], out itemid))
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
 
@@ -413,12 +373,12 @@ namespace SilverSim.Viewer.AISv3
             }
             catch (KeyNotFoundException)
             {
-                req.ErrorResponse(HttpStatusCode.Gone, "Gone");
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Gone");
                 return;
             }
             catch
             {
-                req.ErrorResponse(HttpStatusCode.InternalServerError, "Internal Server Error");
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
             try
@@ -427,7 +387,7 @@ namespace SilverSim.Viewer.AISv3
             }
             catch
             {
-                req.ErrorResponse(HttpStatusCode.InternalServerError, "Internal Server Error");
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
             SuccessResponse(req);
@@ -441,7 +401,7 @@ namespace SilverSim.Viewer.AISv3
             string[] options;
             if (!TrySplitURL(RawUrl, out elements, out options))
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
 
@@ -463,16 +423,12 @@ namespace SilverSim.Viewer.AISv3
                     FolderHandler_Patch(req, elements, options);
                     break;
 
-                case "MOVE":
-                    FolderHandler_Move(req, elements, options);
-                    break;
-
                 case "DELETE":
                     FolderHandler_Delete(req, elements, options);
                     break;
 
                 default:
-                    req.ErrorResponse(HttpStatusCode.MethodNotAllowed, "Method not allowed");
+                    ErrorResponse(req, HttpStatusCode.MethodNotAllowed, AisErrorCode.MethodNotAllowed, "Method not allowed");
                     break;
             }
         }
@@ -486,7 +442,7 @@ namespace SilverSim.Viewer.AISv3
         {
             if(req.ContentType != "application/llsd+xml")
             {
-                req.ErrorResponse(HttpStatusCode.UnsupportedMediaType, "Unsupported media type");
+                ErrorResponse(req, HttpStatusCode.UnsupportedMediaType, AisErrorCode.UnsupportedMedia, "Unsupported media type");
                 return;
             }
 
@@ -500,7 +456,7 @@ namespace SilverSim.Viewer.AISv3
             }
             catch
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
         }
@@ -509,7 +465,7 @@ namespace SilverSim.Viewer.AISv3
         {
             if (req.ContentType != "application/llsd+xml")
             {
-                req.ErrorResponse(HttpStatusCode.UnsupportedMediaType, "Unsupported media type");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.UnsupportedMedia, "Unsupported media type");
                 return;
             }
 
@@ -523,7 +479,7 @@ namespace SilverSim.Viewer.AISv3
             }
             catch
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
         }
@@ -532,7 +488,7 @@ namespace SilverSim.Viewer.AISv3
         {
             if (req.ContentType != "application/llsd+xml")
             {
-                req.ErrorResponse(HttpStatusCode.UnsupportedMediaType, "Unsupported media type");
+                ErrorResponse(req, HttpStatusCode.UnsupportedMediaType, AisErrorCode.UnsupportedMedia, "Unsupported media type");
                 return;
             }
 
@@ -546,18 +502,18 @@ namespace SilverSim.Viewer.AISv3
             }
             catch
             {
-                req.ErrorResponse(HttpStatusCode.BadRequest, "Bad request");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
-        }
 
-        void FolderHandler_Move(HttpRequest req, string[] elements, string[] options)
-        {
-            if(elements.Length != 2)
+            string name;
+            IValue val;
+            if (!reqmap.TryGetValue("name", out val))
             {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Not Found");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
             }
+            name = val.ToString();
 
             InventoryFolder folder;
             try
@@ -566,42 +522,23 @@ namespace SilverSim.Viewer.AISv3
             }
             catch (KeyNotFoundException)
             {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Not Found");
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                 return;
             }
             catch (Exception)
             {
-                req.ErrorResponse(HttpStatusCode.InternalServerError, "Internal Server Error");
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
 
-            if (folder.InventoryType != InventoryType.Unknown)
-            {
-                req.ErrorResponse(HttpStatusCode.Forbidden, "Forbidden");
-                return;
-            }
-            InventoryFolder targetFolder;
+            folder.Name = name;
             try
             {
-                targetFolder = FindFolder(req, req["Destination"]);
+                m_InventoryService.Folder.Update(folder);
             }
-            catch (KeyNotFoundException)
+            catch(Exception)
             {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Destination category not found");
-                return;
-            }
-            catch
-            {
-                req.ErrorResponse(HttpStatusCode.InternalServerError, "Internal Server Error");
-                return;
-            }
-            try
-            {
-                m_InventoryService.Folder.Move(m_AgentID, folder.ID, targetFolder.ID);
-            }
-            catch (KeyNotFoundException)
-            {
-                req.ErrorResponse(HttpStatusCode.Gone, "Category gone");
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
             SuccessResponse(req);
@@ -616,12 +553,12 @@ namespace SilverSim.Viewer.AISv3
             }
             catch (KeyNotFoundException)
             {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Not Found");
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                 return;
             }
             catch (Exception)
             {
-                req.ErrorResponse(HttpStatusCode.InternalServerError, "Internal Server Error");
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
 
@@ -629,7 +566,7 @@ namespace SilverSim.Viewer.AISv3
             {
                 if (folder.InventoryType != InventoryType.Unknown)
                 {
-                    req.ErrorResponse(HttpStatusCode.Forbidden, "Forbidden");
+                    ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.NotSupported, "Forbidden");
                     return;
                 }
                 try
@@ -638,7 +575,7 @@ namespace SilverSim.Viewer.AISv3
                 }
                 catch (KeyNotFoundException)
                 {
-                    req.ErrorResponse(HttpStatusCode.Gone, "Category gone");
+                    ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Category gone");
                     return;
                 }
                 SuccessResponse(req);
@@ -651,14 +588,14 @@ namespace SilverSim.Viewer.AISv3
                 }
                 catch (KeyNotFoundException)
                 {
-                    req.ErrorResponse(HttpStatusCode.Gone, "Category gone");
+                    ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Category gone");
                     return;
                 }
                 SuccessResponse(req);
             }
             else
             {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Not found");
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.NotSupported, "Bad request");
             }
         }
         #endregion
