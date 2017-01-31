@@ -2,29 +2,26 @@
 // GNU Affero General Public License v3
 
 using SilverSim.Main.Common.HttpServer;
+using SilverSim.ServiceInterfaces.Inventory;
 using SilverSim.Types;
-using SilverSim.Viewer.Core;
+using SilverSim.Types.Asset;
+using SilverSim.Types.Inventory;
+using SilverSim.Types.StructuredData.Llsd;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
-using log4net.Repository;
-using SilverSim.Main.Common;
-using SilverSim.Types.Inventory;
-using SilverSim.ServiceInterfaces.Inventory;
-using SilverSim.Types.Asset;
-using System.IO;
-using SilverSim.Types.StructuredData.Llsd;
 
 namespace SilverSim.Viewer.AISv3
 {
     public class AISv3Handler
     {
+        /* the folderCache is only used per-request to prevent unnecessary requests to inventory service */
         string m_PrefixUrl;
         int m_PrefixUrlLength;
         InventoryServiceInterface m_InventoryService;
-        UUID m_AgentID;
+        UUI m_Agent;
 
         enum AisErrorCode
         {
@@ -48,12 +45,12 @@ namespace SilverSim.Viewer.AISv3
             UnsupportedMedia = 17
         }
 
-        public AISv3Handler(string prefixurl, InventoryServiceInterface inventoryService, UUID agentId)
+        public AISv3Handler(string prefixurl, InventoryServiceInterface inventoryService, UUI agent)
         {
             m_PrefixUrl = prefixurl;
             m_PrefixUrlLength = m_PrefixUrl.Length;
             m_InventoryService = inventoryService;
-            m_AgentID = agentId;
+            m_Agent = agent;
         }
 
         void SuccessResponse(HttpRequest req, Map m)
@@ -97,6 +94,87 @@ namespace SilverSim.Viewer.AISv3
             }
         }
 
+        public bool TryGetFolder(UUID folderId, out InventoryFolder folder, Dictionary<UUID, InventoryFolder> folderCache)
+        {
+            if(folderCache.TryGetValue(folderId, out folder))
+            {
+                return true;
+            }
+            if(m_InventoryService.Folder.TryGetValue(m_Agent.ID, out folder))
+            {
+                folderCache.Add(folder.ID, folder);
+                return true;
+            }
+            return false;
+        }
+
+        public string GetFolderHref(UUID folderId, Dictionary<UUID, InventoryFolder> folderCache)
+        {
+            InventoryFolder folder;
+            if(TryGetFolder(folderId, out folder, folderCache))
+            {
+                return GetFolderHref(folder, folderCache);
+            }
+            return m_PrefixUrl + "/category/unknown";
+        }
+
+        public string GetFolderHref(InventoryFolder folder, Dictionary<UUID, InventoryFolder> folderCache)
+        {
+            InventoryFolder parentFolder;
+            if(folder.ParentFolderID == UUID.Zero)
+            {
+                return m_PrefixUrl + "/category/root";
+            }
+            else if(TryGetFolder(folder.ParentFolderID, out parentFolder, folderCache) && 
+                parentFolder.ParentFolderID == UUID.Zero)
+            {
+                switch(folder.InventoryType)
+                {
+                    case InventoryType.Animation:
+                        return m_PrefixUrl + "/category/animatn";
+                    case InventoryType.Bodypart:
+                        return m_PrefixUrl + "/category/bodypart";
+                    case InventoryType.Clothing:
+                        return m_PrefixUrl + "/category/clothing";
+                    case InventoryType.CurrentOutfitFolder:
+                        return m_PrefixUrl + "/category/current";
+                    case InventoryType.FavoriteFolder:
+                        return m_PrefixUrl + "/category/favorite";
+                    case InventoryType.Gesture:
+                        return m_PrefixUrl + "/category/gesture";
+                    case InventoryType.Inbox:
+                        return m_PrefixUrl + "/category/inbox";
+                    case InventoryType.Landmark:
+                        return m_PrefixUrl + "/category/landmark";
+                    case InventoryType.LSLText:
+                        return m_PrefixUrl + "/category/lsltext";
+                    case InventoryType.LostAndFoundFolder:
+                        return m_PrefixUrl + "/category/lstndfnd";
+                    case InventoryType.MyOutfitsFolder:
+                        return m_PrefixUrl + "/category/my_otfts";
+                    case InventoryType.Notecard:
+                        return m_PrefixUrl + "/category/notecard";
+                    case InventoryType.Object:
+                        return m_PrefixUrl + "/category/object";
+                    case InventoryType.Outbox:
+                        return m_PrefixUrl + "/category/outbox";
+                    case InventoryType.RootFolder:
+                        return m_PrefixUrl + "/category/root";
+                    case InventoryType.SnapshotFolder:
+                        return m_PrefixUrl + "/category/snapshot";
+                    case InventoryType.Sound:
+                        return m_PrefixUrl + "/category/sound";
+                    case InventoryType.Texture:
+                        return m_PrefixUrl + "/category/texture";
+                    case InventoryType.TrashFolder:
+                        return m_PrefixUrl + "/category/trash";
+                    default:
+                        break;
+                }
+            }
+            return m_PrefixUrl + "/category/" + folder.ID.ToString();
+        }
+
         public void MainHandler(HttpRequest req)
         {
             if(!req.RawUrl.StartsWith(m_PrefixUrl))
@@ -109,87 +187,184 @@ namespace SilverSim.Viewer.AISv3
 
             if(requrl.StartsWith("/item/"))
             {
-                ItemHandler(req, requrl);
+                try
+                {
+                    ItemHandler(req, requrl);
+                }
+                catch
+                {
+                    ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
+                }
             }
             else if(requrl.StartsWith("/category/"))
             {
-                FolderHandler(req, requrl);
+                try
+                {
+                    FolderHandler(req, requrl);
+                }
+                catch
+                {
+                    ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
+                }
             }
             else
             {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Not Found");
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
             }
         }
 
-        InventoryFolder FindFolder(HttpRequest req, string category_id)
+        bool TryFindFolder(HttpRequest req, string category_id, out InventoryFolder folder, Dictionary<UUID, InventoryFolder> folderCache)
         {
             switch(category_id)
             {
                 case "animatn":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Animation];
+                    if(!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Animation, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "bodypart":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Bodypart];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Bodypart, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "clothing":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Clothing];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Clothing, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "current":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.CurrentOutfitFolder];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.CurrentOutfitFolder, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "favorite":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.FavoriteFolder];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.FavoriteFolder, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "gesture":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Gesture];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Gesture, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "inbox":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Inbox];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Inbox, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "landmark":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Landmark];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Landmark, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "lsltext":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.LSLText];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.LSLText, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "lstndfnd":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.LostAndFoundFolder];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.LostAndFoundFolder, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "my_otfts":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.OutfitFolder];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.MyOutfitsFolder, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "notecard":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Notecard];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Notecard, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "object":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Object];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Object, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "outbox":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Outbox];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Outbox, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "root":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.RootFolder];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.RootFolder, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "snapshot":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.SnapshotFolder];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.SnapshotFolder, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "sound":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Sound];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Sound, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "texture":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.Texture];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.Texture, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 case "trash":
-                    return m_InventoryService.Folder[m_AgentID, AssetType.TrashFolder];
+                    if (!m_InventoryService.Folder.TryGetValue(m_Agent.ID, AssetType.TrashFolder, out folder))
+                    {
+                        return false;
+                    }
+                    break;
 
                 default:
                     UUID id;
                     if(!UUID.TryParse(category_id, out id))
                     {
-                        throw new KeyNotFoundException("Invalid category id");
+                        folder = default(InventoryFolder);
+                        return false;
                     }
-                    return m_InventoryService.Folder[m_AgentID, id];
+                    if(!m_InventoryService.Folder.TryGetValue(m_Agent.ID, id, out folder))
+                    {
+                        return false;
+                    }
+                    break;
             }
+            folderCache.Add(folder.ID, folder);
+            return true;
         }
 
         bool TrySplitURL(string rawurl, out string[] elements, out string[] options)
@@ -258,24 +433,79 @@ namespace SilverSim.Viewer.AISv3
             }
 
             InventoryItem item;
-            if(!m_InventoryService.Item.TryGetValue(m_AgentID, itemid, out item))
+            if(!m_InventoryService.Item.TryGetValue(m_Agent.ID, itemid, out item))
             {
                 ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                 return;
             }
 
+            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
             Map resmap;
             if(item.AssetType == AssetType.Link)
             {
                 resmap = new Map();
+                resmap.Add("_base_uri", m_PrefixUrl + "/item/" + itemid.ToString());
+                Map linkref = new Map();
+                Map href = new Map();
+                href.Add("href", m_PrefixUrl + "/item/" + item.AssetID.ToString());
+                linkref.Add("item", href);
+                href = new Map();
+                href.Add("href", m_PrefixUrl + "/item/" + item.ID.ToString());
+                linkref.Add("self", href);
+                href = new Map();
+                href.Add("href", GetFolderHref(item.ParentFolderID, folderCache));
+                linkref.Add("parent", href);
+                InventoryItem linkeditem;
+                if(m_InventoryService.Item.TryGetValue(item.AssetID, out linkeditem))
+                {
+                    Map embmap = new Map();
+                    resmap.Add("_embedded", embmap);
+                    embmap.Add("item", linkeditem.ToAisV3());
+                }
             }
             else if(item.AssetType == AssetType.LinkFolder)
             {
                 resmap = new Map();
+                resmap.Add("_base_uri", m_PrefixUrl + "/item/" + itemid.ToString());
+                Map linkref = new Map();
+                Map href = new Map();
+                href.Add("href", GetFolderHref(item.AssetID, folderCache));
+                linkref.Add("category", href);
+                href = new Map();
+                href.Add("href", m_PrefixUrl + "/item/" + item.ID.ToString());
+                linkref.Add("self", href);
+                href = new Map();
+                href.Add("href", GetFolderHref(item.ParentFolderID, folderCache));
+                linkref.Add("parent", href);
+                InventoryFolder linkedfolder;
+                if (TryGetFolder(item.AssetID, out linkedfolder, folderCache))
+                {
+                    Map embmap = new Map();
+                    resmap.Add("_embedded", embmap);
+                    Map foldermap = linkedfolder.ToAisV3(); ;
+                    embmap.Add("category", foldermap);
+                    linkref = new Map();
+                    foldermap.Add("_links", linkref);
+                    href = new Map();
+                    href.Add("href", m_PrefixUrl + "/category/" + linkedfolder.ID.ToString());
+                    linkref.Add("self", href);
+                    href = new Map();
+                    href.Add("href", GetFolderHref(linkedfolder.ParentFolderID, folderCache));
+                    linkref.Add("parent", href);
+                }
             }
             else
             {
                 resmap = item.ToAisV3();
+                Map linkref = new Map();
+                Map href = new Map();
+                href.Add("href", m_PrefixUrl + "/item/" + itemid.ToString());
+                linkref.Add("self", href);
+                href = new Map();
+                href.Add("href", GetFolderHref(item.ParentFolderID, folderCache));
+                linkref.Add("parent", href);
+                resmap.Add("_links", linkref);
+                resmap.Add("_base_uri", m_PrefixUrl + "/item/" + itemid.ToString());
             }
             SuccessResponse(req, resmap);
         }
@@ -342,14 +572,14 @@ namespace SilverSim.Viewer.AISv3
                 return;
             }
             InventoryFolder destFolder;
+            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                destFolder = FindFolder(req, destelements[1]);
-            }
-            catch (KeyNotFoundException)
-            {
-                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
-                return;
+                if (!TryFindFolder(req, destelements[1], out destFolder, folderCache))
+                {
+                    ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                    return;
+                }
             }
             catch
             {
@@ -358,7 +588,7 @@ namespace SilverSim.Viewer.AISv3
             }
 
             InventoryItem item;
-            if (!m_InventoryService.Item.TryGetValue(m_AgentID, itemid, out item))
+            if (!m_InventoryService.Item.TryGetValue(m_Agent.ID, itemid, out item))
             {
                 ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source item gone");
                 return;
@@ -391,7 +621,7 @@ namespace SilverSim.Viewer.AISv3
             InventoryItem item;
             try
             {
-                item = m_InventoryService.Item[m_AgentID, itemid];
+                item = m_InventoryService.Item[m_Agent.ID, itemid];
             }
             catch (KeyNotFoundException)
             {
@@ -405,7 +635,7 @@ namespace SilverSim.Viewer.AISv3
             }
             try
             {
-                m_InventoryService.Item.Delete(m_AgentID, item.ID);
+                m_InventoryService.Item.Delete(m_Agent.ID, item.ID);
             }
             catch
             {
@@ -430,7 +660,31 @@ namespace SilverSim.Viewer.AISv3
             switch(req.Method)
             {
                 case "GET":
-                    FolderHandler_Get(req, elements, options);
+                    if (elements.Length == 2)
+                    {
+                        FolderHandler_Get(req, elements, options);
+                    }
+                    else if(elements.Length == 3)
+                    {
+                        switch(elements[2])
+                        {
+                            case "chilren":
+                                break;
+
+                            case "links":
+                                break;
+
+                            case "items":
+                                break;
+
+                            case "categories":
+                                break;
+
+                            default:
+                                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Invalid request");
+                                break;
+                        }
+                    }
                     break;
 
                 case "POST":
@@ -457,6 +711,20 @@ namespace SilverSim.Viewer.AISv3
 
         void FolderHandler_Get(HttpRequest req, string[] elements, string[] options)
         {
+            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
+            InventoryFolder thisFolder;
+            if (!TryFindFolder(req, elements[1], out thisFolder, folderCache))
+            {
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
+                return;
+            }
+            InventoryFolderContent content;
+            if(!m_InventoryService.Folder.Content.TryGetValue(m_Agent.ID, thisFolder.ID, out content))
+            {
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
+                return;
+            }
+
 
         }
 
@@ -480,6 +748,108 @@ namespace SilverSim.Viewer.AISv3
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
+            }
+
+            InventoryFolder folder;
+            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
+            try
+            {
+                if(!TryFindFolder(req, elements[1], out folder, folderCache))
+                {
+                    ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
+                    return;
+                }
+            }
+            catch (Exception)
+            {
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
+                return;
+            }
+
+            List<InventoryItem> items;
+            List<InventoryItem> itemlinks = new List<InventoryItem>();
+            List<InventoryFolder> folders = new List<InventoryFolder>();
+            AnArray array;
+
+            items = reqmap.TryGetValue("items", out array) ?
+                items = array.ItemsFromAisV3(m_Agent, folder.ID) :
+                new List<InventoryItem>();
+
+            if(reqmap.TryGetValue<AnArray>("links", out array))
+            {
+                List<InventoryItem> links = array.LinksFromAisV3(m_Agent, folder.ID);
+                items.AddRange(from link in links where link.AssetType == AssetType.LinkFolder select link);
+                itemlinks.AddRange(from link in links where link.AssetType == AssetType.Link select link);
+            }
+
+            if(reqmap.TryGetValue<AnArray>("categories", out array))
+            {
+                array.CategoriesFromAisV3(m_Agent, folder.ID, folders, items, itemlinks);
+            }
+
+            /* linkfolder entries do not need specific handling */
+            List<UUID> linked_ids = new List<UUID>(from link in itemlinks select link.AssetID);
+            List<UUID> dedup_linked_ids = new List<UUID>();
+            foreach(UUID id in linked_ids)
+            {
+                if(!dedup_linked_ids.Contains(id))
+                {
+                    dedup_linked_ids.Add(id);
+                }
+            }
+            Dictionary<UUID, InventoryItem> linkeditems = new Dictionary<UUID, InventoryItem>();
+            foreach(InventoryItem item in 
+                from linkeditem in m_InventoryService.Item[m_Agent.ID, dedup_linked_ids] select linkeditem)
+            {
+                linkeditems.Add(item.ID, item);
+            }
+
+            foreach(InventoryItem item in itemlinks)
+            {
+                InventoryItem linkeditem;
+                if(linkeditems.TryGetValue(item.AssetID, out linkeditem))
+                {
+                    item.InventoryType = linkeditem.InventoryType;
+                    items.Add(item);
+                }
+            }
+
+            try
+            {
+                foreach (InventoryFolder folderentry in folders)
+                {
+                    m_InventoryService.Folder.Add(folderentry);
+                }
+            }
+            catch
+            {
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
+                return;
+            }
+            try
+            {
+                foreach(InventoryItem item in items)
+                {
+                    m_InventoryService.Item.Add(item);
+                }
+            }
+            catch
+            {
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
+                return;
+            }
+
+            Map resmap = new Map();
+            using (MemoryStream ms = new MemoryStream())
+            {
+                LlsdXml.Serialize(resmap, ms);
+                using (HttpResponse res = req.BeginResponse(HttpStatusCode.Created, "Inventory created", "application/llsd+xml"))
+                {
+                    using (Stream o = res.GetOutputStream(ms.Length))
+                    {
+                        o.Write(ms.ToArray(), 0, (int)ms.Length);
+                    }
+                }
             }
         }
 
@@ -538,14 +908,14 @@ namespace SilverSim.Viewer.AISv3
             name = val.ToString();
 
             InventoryFolder folder;
+            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                folder = FindFolder(req, elements[1]);
-            }
-            catch (KeyNotFoundException)
-            {
-                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
-                return;
+                if(!TryFindFolder(req, elements[1], out folder, folderCache))
+                {
+                    ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
+                    return;
+                }
             }
             catch (Exception)
             {
@@ -569,14 +939,14 @@ namespace SilverSim.Viewer.AISv3
         void FolderHandler_Delete(HttpRequest req, string[] elements, string[] options)
         {
             InventoryFolder folder;
+            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                folder = FindFolder(req, elements[1]);
-            }
-            catch (KeyNotFoundException)
-            {
-                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
-                return;
+                if(!TryFindFolder(req, elements[1], out folder, folderCache))
+                {
+                    ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
+                    return;
+                }
             }
             catch (Exception)
             {
@@ -593,7 +963,7 @@ namespace SilverSim.Viewer.AISv3
                 }
                 try
                 {
-                    m_InventoryService.Folder.Delete(m_AgentID, folder.ID);
+                    m_InventoryService.Folder.Delete(m_Agent.ID, folder.ID);
                 }
                 catch (KeyNotFoundException)
                 {
@@ -606,7 +976,7 @@ namespace SilverSim.Viewer.AISv3
             {
                 try
                 {
-                    m_InventoryService.Folder.Purge(m_AgentID, folder.ID);
+                    m_InventoryService.Folder.Purge(m_Agent.ID, folder.ID);
                 }
                 catch (KeyNotFoundException)
                 {
