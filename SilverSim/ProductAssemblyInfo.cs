@@ -23,7 +23,7 @@ using System.Reflection;
 
 [assembly: AssemblyProduct("SilverSim/Arriba")]
 [assembly: AssemblyCompany("SilverSim Development")]
-[assembly: AssemblyCopyright("Affero GPLv3 License")]
+[assembly: AssemblyCopyright("Affero GPLv3 License+Link Exception")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
