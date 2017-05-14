@@ -461,17 +461,25 @@ namespace SilverSim.Viewer.AISv3
             Map resmap;
             if(item.AssetType == AssetType.Link)
             {
-                resmap = new Map();
-                resmap.Add("_base_uri", m_PrefixUrl + "/item/" + itemid.ToString());
+                resmap = new Map
+                {
+                    { "_base_uri", m_PrefixUrl + "/item/" + itemid.ToString() }
+                };
                 Map linkref = new Map();
-                Map href = new Map();
-                href.Add("href", m_PrefixUrl + "/item/" + item.AssetID.ToString());
+                Map href = new Map
+                {
+                    { "href", m_PrefixUrl + "/item/" + item.AssetID.ToString() }
+                };
                 linkref.Add("item", href);
-                href = new Map();
-                href.Add("href", m_PrefixUrl + "/item/" + item.ID.ToString());
+                href = new Map
+                {
+                    { "href", m_PrefixUrl + "/item/" + item.ID.ToString() }
+                };
                 linkref.Add("self", href);
-                href = new Map();
-                href.Add("href", GetFolderHref(item.ParentFolderID, folderCache));
+                href = new Map
+                {
+                    { "href", GetFolderHref(item.ParentFolderID, folderCache) }
+                };
                 linkref.Add("parent", href);
                 InventoryItem linkeditem;
                 if(m_InventoryService.Item.TryGetValue(item.AssetID, out linkeditem))
@@ -483,17 +491,25 @@ namespace SilverSim.Viewer.AISv3
             }
             else if(item.AssetType == AssetType.LinkFolder)
             {
-                resmap = new Map();
-                resmap.Add("_base_uri", m_PrefixUrl + "/item/" + itemid.ToString());
+                resmap = new Map
+                {
+                    { "_base_uri", m_PrefixUrl + "/item/" + itemid.ToString() }
+                };
                 Map linkref = new Map();
-                Map href = new Map();
-                href.Add("href", GetFolderHref(item.AssetID, folderCache));
+                Map href = new Map
+                {
+                    { "href", GetFolderHref(item.AssetID, folderCache) }
+                };
                 linkref.Add("category", href);
-                href = new Map();
-                href.Add("href", m_PrefixUrl + "/item/" + item.ID.ToString());
+                href = new Map
+                {
+                    { "href", m_PrefixUrl + "/item/" + item.ID.ToString() }
+                };
                 linkref.Add("self", href);
-                href = new Map();
-                href.Add("href", GetFolderHref(item.ParentFolderID, folderCache));
+                href = new Map
+                {
+                    { "href", GetFolderHref(item.ParentFolderID, folderCache) }
+                };
                 linkref.Add("parent", href);
                 InventoryFolder linkedfolder;
                 if (TryGetFolder(item.AssetID, out linkedfolder, folderCache))
@@ -504,11 +520,15 @@ namespace SilverSim.Viewer.AISv3
                     embmap.Add("category", foldermap);
                     linkref = new Map();
                     foldermap.Add("_links", linkref);
-                    href = new Map();
-                    href.Add("href", m_PrefixUrl + "/category/" + linkedfolder.ID.ToString());
+                    href = new Map
+                    {
+                        { "href", m_PrefixUrl + "/category/" + linkedfolder.ID.ToString() }
+                    };
                     linkref.Add("self", href);
-                    href = new Map();
-                    href.Add("href", GetFolderHref(linkedfolder.ParentFolderID, folderCache));
+                    href = new Map
+                    {
+                        { "href", GetFolderHref(linkedfolder.ParentFolderID, folderCache) }
+                    };
                     linkref.Add("parent", href);
                 }
             }
@@ -516,11 +536,15 @@ namespace SilverSim.Viewer.AISv3
             {
                 resmap = item.ToAisV3();
                 Map linkref = new Map();
-                Map href = new Map();
-                href.Add("href", m_PrefixUrl + "/item/" + itemid.ToString());
+                Map href = new Map
+                {
+                    { "href", m_PrefixUrl + "/item/" + itemid.ToString() }
+                };
                 linkref.Add("self", href);
-                href = new Map();
-                href.Add("href", GetFolderHref(item.ParentFolderID, folderCache));
+                href = new Map
+                {
+                    { "href", GetFolderHref(item.ParentFolderID, folderCache) }
+                };
                 linkref.Add("parent", href);
                 resmap.Add("_links", linkref);
                 resmap.Add("_base_uri", m_PrefixUrl + "/item/" + itemid.ToString());
