@@ -29,31 +29,31 @@ namespace SilverSim.Viewer.AISv3
 {
     public static class AISv3ExtensionMethods
     {
-        public static Map ToAisV3(this InventoryFolder folder)
+        public static Map ToAisV3(this InventoryFolder folder) => new Map
         {
-            Map resmap = new Map();
-            resmap.Add("name", folder.Name);
-            resmap.Add("type_default", (int)folder.InventoryType);
-            resmap.Add("parent_id", folder.ParentFolderID);
-            resmap.Add("version", folder.Version);
-            resmap.Add("agent_id", folder.Owner.ID);
-            resmap.Add("category_id", folder.ID);
-            return resmap;
-        }
+            { "name", folder.Name },
+            { "type_default", (int)folder.InventoryType },
+            { "parent_id", folder.ParentFolderID },
+            { "version", folder.Version },
+            { "agent_id", folder.Owner.ID },
+            { "category_id", folder.ID }
+        };
 
         public static List<InventoryItem>ItemsFromAisV3(this AnArray items_array, UUI agent, UUID parentFolderId)
         {
-            List<InventoryItem> items = new List<InventoryItem>();
+            var items = new List<InventoryItem>();
             foreach (Map item_map in items_array.GetValues<Map>())
             {
-                InventoryItem item = new InventoryItem();
-                item.Owner = agent;
-                item.Creator = agent;
-                item.ParentFolderID = parentFolderId;
-                item.CreationDate = Date.Now;
-                item.AssetID = item_map["asset_id"].AsUUID;
-                item.InventoryType = (InventoryType)item_map["inv_type"].AsInt;
-                item.Name = item_map["name"].ToString();
+                var item = new InventoryItem()
+                {
+                    Owner = agent,
+                    Creator = agent,
+                    ParentFolderID = parentFolderId,
+                    CreationDate = Date.Now,
+                    AssetID = item_map["asset_id"].AsUUID,
+                    InventoryType = (InventoryType)item_map["inv_type"].AsInt,
+                    Name = item_map["name"].ToString()
+                };
                 Integer intval;
                 Map sale_info;
                 if (item_map.TryGetValue("sale_info", out sale_info))
@@ -108,16 +108,18 @@ namespace SilverSim.Viewer.AISv3
 
         public static List<InventoryItem> LinksFromAisV3(this AnArray items_array, UUI agent, UUID parentFolderId)
         {
-            List<InventoryItem> items = new List<InventoryItem>();
+            var items = new List<InventoryItem>();
             foreach (Map item_map in items_array.GetValues<Map>())
             {
-                InventoryItem item = new InventoryItem();
-                item.Owner = agent;
-                item.Creator = agent;
-                item.ParentFolderID = parentFolderId;
-                item.CreationDate = Date.Now;
-                item.AssetID = item_map["linked_id"].AsUUID;
-                item.AssetType = (AssetType)item_map["type"].AsInt;
+                var item = new InventoryItem()
+                {
+                    Owner = agent,
+                    Creator = agent,
+                    ParentFolderID = parentFolderId,
+                    CreationDate = Date.Now,
+                    AssetID = item_map["linked_id"].AsUUID,
+                    AssetType = (AssetType)item_map["type"].AsInt
+                };
                 IValue iv;
                 if(item_map.TryGetValue("name", out iv))
                 {
@@ -134,29 +136,35 @@ namespace SilverSim.Viewer.AISv3
 
         public static Map ToAisV3(this InventoryItem item)
         {
-            Map resmap = new Map();
-            resmap.Add("asset_id", item.AssetID);
-            resmap.Add("inv_type", (int)item.InventoryType);
-            resmap.Add("name", item.Name);
-            Map sale_info = new Map();
-            sale_info.Add("sale_price", item.SaleInfo.Price);
-            sale_info.Add("sale_type", (int)item.SaleInfo.Type);
+            var resmap = new Map
+            {
+                { "asset_id", item.AssetID },
+                { "inv_type", (int)item.InventoryType },
+                { "name", item.Name }
+            };
+            var sale_info = new Map
+            {
+                { "sale_price", item.SaleInfo.Price },
+                { "sale_type", (int)item.SaleInfo.Type }
+            };
             resmap.Add("sale_info", sale_info);
             resmap.Add("created_at", item.CreationDate.DateTimeToUnixTime());
             resmap.Add("parent_id", item.ParentFolderID);
             resmap.Add("flags", (int)item.Flags);
             resmap.Add("agent_id", item.Owner.ID);
             resmap.Add("item_id", item.ID);
-            Map perm_info = new Map();
-            perm_info.Add("base_mask", (int)item.Permissions.Base);
-            perm_info.Add("group_mask", (int)item.Permissions.Group);
-            perm_info.Add("last_owner_id", item.LastOwner.ID);
-            perm_info.Add("owner_id", item.Owner.ID);
-            perm_info.Add("creator_id", item.Creator.ID);
-            perm_info.Add("next_owner_mask", (int)item.Permissions.NextOwner);
-            perm_info.Add("owner_mask", (int)item.Permissions.Current);
-            perm_info.Add("group_id", item.Group.ID);
-            perm_info.Add("everyone_mask", (int)item.Permissions.EveryOne);
+            var perm_info = new Map
+            {
+                { "base_mask", (int)item.Permissions.Base },
+                { "group_mask", (int)item.Permissions.Group },
+                { "last_owner_id", item.LastOwner.ID },
+                { "owner_id", item.Owner.ID },
+                { "creator_id", item.Creator.ID },
+                { "next_owner_mask", (int)item.Permissions.NextOwner },
+                { "owner_mask", (int)item.Permissions.Current },
+                { "group_id", item.Group.ID },
+                { "everyone_mask", (int)item.Permissions.EveryOne }
+            };
             resmap.Add("permissions", perm_info);
             resmap.Add("type", (int)item.InventoryType);
             resmap.Add("desc", item.Description);
@@ -174,14 +182,14 @@ namespace SilverSim.Viewer.AISv3
         public static void CategoryFromAisV3(this Map category, UUI agent, UUID toParentFolderId, List<InventoryFolder> folders, List<InventoryItem> items, List<InventoryItem> itemlinks)
         {
             /* we use a stack based algo here instead of recursive (ParentFolderID, Category_Map) */
-            List<KeyValuePair<UUID, Map>> folders_stack = new List<KeyValuePair<UUID, Map>>();
+            var folders_stack = new List<KeyValuePair<UUID, Map>>();
             folders_stack.Add(new KeyValuePair<UUID, Map>(toParentFolderId, category));
 
             while(folders_stack.Count != 0)
             {
                 KeyValuePair<UUID, Map> kvp = folders_stack[0];
                 folders_stack.RemoveAt(0);
-                InventoryFolder folder = new InventoryFolder();
+                var folder = new InventoryFolder();
                 folder.ParentFolderID = kvp.Key;
                 folder.Owner = agent;
                 folder.InventoryType = InventoryType.Unknown;

@@ -36,12 +36,12 @@ namespace SilverSim.Viewer.AISv3
     public class AISv3Handler
     {
         /* the folderCache is only used per-request to prevent unnecessary requests to inventory service */
-        string m_PrefixUrl;
-        int m_PrefixUrlLength;
-        InventoryServiceInterface m_InventoryService;
-        UUI m_Agent;
+        private string m_PrefixUrl;
+        private int m_PrefixUrlLength;
+        private InventoryServiceInterface m_InventoryService;
+        private UUI m_Agent;
 
-        enum AisErrorCode
+        private enum AisErrorCode
         {
             InvalidRequest = 0,
             InvalidShape = 1,
@@ -71,9 +71,9 @@ namespace SilverSim.Viewer.AISv3
             m_Agent = agent;
         }
 
-        void SuccessResponse(HttpRequest req, Map m)
+        private void SuccessResponse(HttpRequest req, Map m)
         {
-            using (MemoryStream ms = new MemoryStream())
+            using (var ms = new MemoryStream())
             {
                 LlsdXml.Serialize(m, ms);
                 using (HttpResponse res = req.BeginResponse("application/llsd+xml"))
@@ -86,20 +86,20 @@ namespace SilverSim.Viewer.AISv3
             }
         }
 
-        void SuccessResponse(HttpRequest req)
+        private void SuccessResponse(HttpRequest req)
         {
             SuccessResponse(req, new Map());
         }
 
-        void ErrorResponse(HttpRequest req, HttpStatusCode code, AisErrorCode errorcode, string description)
+        private void ErrorResponse(HttpRequest req, HttpStatusCode code, AisErrorCode errorcode, string description)
         {
             ErrorResponse(req, code, errorcode, description, new Map());
         }
 
-        void ErrorResponse(HttpRequest req, HttpStatusCode code, AisErrorCode errorcode, string description, Map m)
+        private void ErrorResponse(HttpRequest req, HttpStatusCode code, AisErrorCode errorcode, string description, Map m)
         {
             m.Add("error_code", (int)errorcode);
-            using (MemoryStream ms = new MemoryStream())
+            using (var ms = new MemoryStream())
             {
                 LlsdXml.Serialize(m, ms);
                 using (HttpResponse res = req.BeginResponse(code, description, "application/llsd+xml"))
@@ -231,7 +231,7 @@ namespace SilverSim.Viewer.AISv3
             }
         }
 
-        bool TryFindFolder(HttpRequest req, string category_id, out InventoryFolder folder, Dictionary<UUID, InventoryFolder> folderCache)
+        private bool TryFindFolder(string category_id, out InventoryFolder folder, Dictionary<UUID, InventoryFolder> folderCache)
         {
             switch(category_id)
             {
@@ -385,7 +385,7 @@ namespace SilverSim.Viewer.AISv3
             return true;
         }
 
-        bool TrySplitURL(string rawurl, out string[] elements, out string[] options)
+        private bool TrySplitURL(string rawurl, out string[] elements, out string[] options)
         {
             string[] splitquery = rawurl.Split('?');
             elements = splitquery[0].Substring(1).Split('/');
@@ -407,7 +407,7 @@ namespace SilverSim.Viewer.AISv3
         }
 
         #region Item Handling
-        void ItemHandler(HttpRequest req, string RawUrl)
+        private void ItemHandler(HttpRequest req, string RawUrl)
         {
             string[] elements;
             string[] options;
@@ -440,7 +440,7 @@ namespace SilverSim.Viewer.AISv3
             }
         }
 
-        void ItemHandler_Get(HttpRequest req, string[] elements, string[] options)
+        private void ItemHandler_Get(HttpRequest req, string[] elements, string[] options)
         {
             UUID itemid;
 
@@ -457,7 +457,7 @@ namespace SilverSim.Viewer.AISv3
                 return;
             }
 
-            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
+            var folderCache = new Dictionary<UUID, InventoryFolder>();
             Map resmap;
             if(item.AssetType == AssetType.Link)
             {
@@ -465,8 +465,8 @@ namespace SilverSim.Viewer.AISv3
                 {
                     { "_base_uri", m_PrefixUrl + "/item/" + itemid.ToString() }
                 };
-                Map linkref = new Map();
-                Map href = new Map
+                var linkref = new Map();
+                var href = new Map
                 {
                     { "href", m_PrefixUrl + "/item/" + item.AssetID.ToString() }
                 };
@@ -484,7 +484,7 @@ namespace SilverSim.Viewer.AISv3
                 InventoryItem linkeditem;
                 if(m_InventoryService.Item.TryGetValue(item.AssetID, out linkeditem))
                 {
-                    Map embmap = new Map();
+                    var embmap = new Map();
                     resmap.Add("_embedded", embmap);
                     embmap.Add("item", linkeditem.ToAisV3());
                 }
@@ -495,8 +495,8 @@ namespace SilverSim.Viewer.AISv3
                 {
                     { "_base_uri", m_PrefixUrl + "/item/" + itemid.ToString() }
                 };
-                Map linkref = new Map();
-                Map href = new Map
+                var linkref = new Map();
+                var href = new Map
                 {
                     { "href", GetFolderHref(item.AssetID, folderCache) }
                 };
@@ -514,9 +514,9 @@ namespace SilverSim.Viewer.AISv3
                 InventoryFolder linkedfolder;
                 if (TryGetFolder(item.AssetID, out linkedfolder, folderCache))
                 {
-                    Map embmap = new Map();
+                    var embmap = new Map();
                     resmap.Add("_embedded", embmap);
-                    Map foldermap = linkedfolder.ToAisV3(); ;
+                    var foldermap = linkedfolder.ToAisV3();
                     embmap.Add("category", foldermap);
                     linkref = new Map();
                     foldermap.Add("_links", linkref);
@@ -535,8 +535,8 @@ namespace SilverSim.Viewer.AISv3
             else
             {
                 resmap = item.ToAisV3();
-                Map linkref = new Map();
-                Map href = new Map
+                var linkref = new Map();
+                var href = new Map
                 {
                     { "href", m_PrefixUrl + "/item/" + itemid.ToString() }
                 };
@@ -614,10 +614,10 @@ namespace SilverSim.Viewer.AISv3
                 return;
             }
             InventoryFolder destFolder;
-            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
+            var folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                if (!TryFindFolder(req, destelements[1], out destFolder, folderCache))
+                if (!TryFindFolder(destelements[1], out destFolder, folderCache))
                 {
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
                     return;
@@ -650,7 +650,7 @@ namespace SilverSim.Viewer.AISv3
             SuccessResponse(req);
         }
 
-        void ItemHandler_Delete(HttpRequest req, string[] elements, string[] options)
+        private void ItemHandler_Delete(HttpRequest req, string[] elements, string[] options)
         {
             UUID itemid;
 
@@ -689,7 +689,7 @@ namespace SilverSim.Viewer.AISv3
         #endregion
 
         #region Folder Handling
-        void FolderHandler(HttpRequest req, string RawUrl)
+        private void FolderHandler(HttpRequest req, string RawUrl)
         {
             string[] elements;
             string[] options;
@@ -751,11 +751,11 @@ namespace SilverSim.Viewer.AISv3
             }
         }
 
-        void FolderHandler_Get(HttpRequest req, string[] elements, string[] options)
+        private void FolderHandler_Get(HttpRequest req, string[] elements, string[] options)
         {
-            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
+            var folderCache = new Dictionary<UUID, InventoryFolder>();
             InventoryFolder thisFolder;
-            if (!TryFindFolder(req, elements[1], out thisFolder, folderCache))
+            if (!TryFindFolder(elements[1], out thisFolder, folderCache))
             {
                 ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                 return;
@@ -770,7 +770,7 @@ namespace SilverSim.Viewer.AISv3
 
         }
 
-        void FolderHandler_Post(HttpRequest req, string[] elements, string[] options)
+        private void FolderHandler_Post(HttpRequest req, string[] elements, string[] options)
         {
             if(req.ContentType != "application/llsd+xml")
             {
@@ -793,10 +793,10 @@ namespace SilverSim.Viewer.AISv3
             }
 
             InventoryFolder folder;
-            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
+            var folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                if(!TryFindFolder(req, elements[1], out folder, folderCache))
+                if(!TryFindFolder(elements[1], out folder, folderCache))
                 {
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;
@@ -809,8 +809,8 @@ namespace SilverSim.Viewer.AISv3
             }
 
             List<InventoryItem> items;
-            List<InventoryItem> itemlinks = new List<InventoryItem>();
-            List<InventoryFolder> folders = new List<InventoryFolder>();
+            var itemlinks = new List<InventoryItem>();
+            var folders = new List<InventoryFolder>();
             AnArray array;
 
             items = reqmap.TryGetValue("items", out array) ?
@@ -830,8 +830,8 @@ namespace SilverSim.Viewer.AISv3
             }
 
             /* linkfolder entries do not need specific handling */
-            List<UUID> linked_ids = new List<UUID>(from link in itemlinks select link.AssetID);
-            List<UUID> dedup_linked_ids = new List<UUID>();
+            var linked_ids = new List<UUID>(from link in itemlinks select link.AssetID);
+            var dedup_linked_ids = new List<UUID>();
             foreach(UUID id in linked_ids)
             {
                 if(!dedup_linked_ids.Contains(id))
@@ -839,7 +839,7 @@ namespace SilverSim.Viewer.AISv3
                     dedup_linked_ids.Add(id);
                 }
             }
-            Dictionary<UUID, InventoryItem> linkeditems = new Dictionary<UUID, InventoryItem>();
+            var linkeditems = new Dictionary<UUID, InventoryItem>();
             foreach(InventoryItem item in 
                 from linkeditem in m_InventoryService.Item[m_Agent.ID, dedup_linked_ids] select linkeditem)
             {
@@ -881,8 +881,8 @@ namespace SilverSim.Viewer.AISv3
                 return;
             }
 
-            Map resmap = new Map();
-            using (MemoryStream ms = new MemoryStream())
+            var resmap = new Map();
+            using (var ms = new MemoryStream())
             {
                 LlsdXml.Serialize(resmap, ms);
                 using (HttpResponse res = req.BeginResponse(HttpStatusCode.Created, "Inventory created", "application/llsd+xml"))
@@ -895,7 +895,7 @@ namespace SilverSim.Viewer.AISv3
             }
         }
 
-        void FolderHandler_Put(HttpRequest req, string[] elements, string[] options)
+        private void FolderHandler_Put(HttpRequest req, string[] elements, string[] options)
         {
             if (req.ContentType != "application/llsd+xml")
             {
@@ -918,7 +918,7 @@ namespace SilverSim.Viewer.AISv3
             }
         }
 
-        void FolderHandler_Patch(HttpRequest req, string[] elements, string[] options)
+        private void FolderHandler_Patch(HttpRequest req, string[] elements, string[] options)
         {
             if (req.ContentType != "application/llsd+xml")
             {
@@ -950,10 +950,10 @@ namespace SilverSim.Viewer.AISv3
             name = val.ToString();
 
             InventoryFolder folder;
-            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
+            var folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                if(!TryFindFolder(req, elements[1], out folder, folderCache))
+                if(!TryFindFolder(elements[1], out folder, folderCache))
                 {
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;
@@ -978,13 +978,13 @@ namespace SilverSim.Viewer.AISv3
             SuccessResponse(req);
         }
 
-        void FolderHandler_Delete(HttpRequest req, string[] elements, string[] options)
+        private void FolderHandler_Delete(HttpRequest req, string[] elements, string[] options)
         {
             InventoryFolder folder;
-            Dictionary<UUID, InventoryFolder> folderCache = new Dictionary<UUID, InventoryFolder>();
+            var folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                if(!TryFindFolder(req, elements[1], out folder, folderCache))
+                if(!TryFindFolder(elements[1], out folder, folderCache))
                 {
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;
