@@ -635,7 +635,7 @@ namespace SilverSim.Viewer.AISv3
                 ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source item gone");
                 return;
             }
-            item.ID = UUID.Random;
+            item.SetNewID(UUID.Random);
             item.ParentFolderID = destFolder.ID;
 
             try
