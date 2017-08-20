@@ -839,6 +839,7 @@ namespace SilverSim.Viewer.AISv3
             /* linkfolder entries do not need specific handling */
             var linked_ids = new List<UUID>(from link in itemlinks select link.AssetID);
             var dedup_linked_ids = new List<UUID>();
+            var rescreateditems = new AnArray();
             foreach(UUID id in linked_ids)
             {
                 if(!dedup_linked_ids.Contains(id))
@@ -851,6 +852,7 @@ namespace SilverSim.Viewer.AISv3
                 from linkeditem in req.InventoryService.Item[req.Agent.ID, dedup_linked_ids] select linkeditem)
             {
                 linkeditems.Add(item.ID, item);
+                rescreateditems.Add(item.ID);
             }
 
             foreach(InventoryItem item in itemlinks)
@@ -860,6 +862,7 @@ namespace SilverSim.Viewer.AISv3
                 {
                     item.InventoryType = linkeditem.InventoryType;
                     items.Add(item);
+                    rescreateditems.Add(item.ID);
                 }
             }
 
@@ -889,17 +892,14 @@ namespace SilverSim.Viewer.AISv3
             }
 
             var resmap = new Map();
-            using (var ms = new MemoryStream())
+            var resarray = new AnArray();
+            foreach(InventoryFolder folderentry in folders)
             {
-                LlsdXml.Serialize(resmap, ms);
-                using (HttpResponse res = req.HttpRequest.BeginResponse(HttpStatusCode.Created, "Inventory created", "application/llsd+xml"))
-                {
-                    using (Stream o = res.GetOutputStream(ms.Length))
-                    {
-                        o.Write(ms.ToArray(), 0, (int)ms.Length);
-                    }
-                }
+                resarray.Add(folderentry.ID);
             }
+            resmap.Add("_created_categories", resarray);
+            resmap.Add("_created_items", rescreateditems);
+            SuccessResponse(req, resmap);
         }
 
         private static void FolderHandler_Put(Request req, string[] elements, string[] options)
