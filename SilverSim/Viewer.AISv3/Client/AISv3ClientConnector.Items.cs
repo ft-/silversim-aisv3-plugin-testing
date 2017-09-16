@@ -34,7 +34,18 @@ namespace SilverSim.Viewer.AISv3.Client
 {
     public partial class AISv3ClientConnector : IInventoryItemServiceInterface
     {
-        InventoryItem IInventoryItemServiceInterface.this[UUID key] => throw new NotImplementedException();
+        InventoryItem IInventoryItemServiceInterface.this[UUID key]
+        {
+            get
+            {
+                InventoryItem item;
+                if(!Item.TryGetValue(key, out item))
+                {
+                    throw new InventoryItemNotFoundException(key);
+                }
+                return item;
+            }
+        }
 
         InventoryItem IInventoryItemServiceInterface.this[UUID principalID, UUID key]
         {
