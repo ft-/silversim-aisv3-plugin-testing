@@ -396,7 +396,7 @@ namespace SilverSim.Viewer.AISv3
         {
             string[] splitquery = rawurl.Split('?');
             elements = splitquery[0].Substring(1).Split('/');
-            if (elements.Length < 2)
+            if (splitquery.Length < 2)
             {
                 options = new string[0];
                 return false;
@@ -418,7 +418,7 @@ namespace SilverSim.Viewer.AISv3
         {
             string[] elements;
             string[] options;
-            if(!TrySplitURL(RawUrl, out elements, out options) || elements.Length != 2)
+            if(!TrySplitURL(RawUrl, out elements, out options) || elements.Length < 5)
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
@@ -451,7 +451,7 @@ namespace SilverSim.Viewer.AISv3
         {
             UUID itemid;
 
-            if (!UUID.TryParse(elements[1], out itemid))
+            if (!UUID.TryParse(elements[4], out itemid))
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
@@ -569,7 +569,7 @@ namespace SilverSim.Viewer.AISv3
 
             UUID itemid;
 
-            if (!UUID.TryParse(elements[1], out itemid))
+            if (!UUID.TryParse(elements[4], out itemid))
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
@@ -594,7 +594,7 @@ namespace SilverSim.Viewer.AISv3
         {
             UUID itemid;
 
-            if (!UUID.TryParse(elements[1], out itemid))
+            if (!UUID.TryParse(elements[4], out itemid))
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
@@ -661,7 +661,7 @@ namespace SilverSim.Viewer.AISv3
         {
             UUID itemid;
 
-            if (!UUID.TryParse(elements[1], out itemid))
+            if (!UUID.TryParse(elements[4], out itemid))
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
@@ -700,7 +700,7 @@ namespace SilverSim.Viewer.AISv3
         {
             string[] elements;
             string[] options;
-            if (!TrySplitURL(RawUrl, out elements, out options))
+            if (!TrySplitURL(RawUrl, out elements, out options) || elements.Length < 5)
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
@@ -709,15 +709,15 @@ namespace SilverSim.Viewer.AISv3
             switch(req.HttpRequest.Method)
             {
                 case "GET":
-                    if (elements.Length == 2)
+                    if (elements.Length == 5)
                     {
                         FolderHandler_Get(req, elements, options);
                     }
-                    else if(elements.Length == 3)
+                    else if(elements.Length == 6)
                     {
-                        switch(elements[2])
+                        switch(elements[5])
                         {
-                            case "chilren":
+                            case "children":
                                 break;
 
                             case "links":
@@ -762,7 +762,7 @@ namespace SilverSim.Viewer.AISv3
         {
             var folderCache = new Dictionary<UUID, InventoryFolder>();
             InventoryFolder thisFolder;
-            if (!TryFindFolder(req, elements[1], out thisFolder, folderCache))
+            if (!TryFindFolder(req, elements[4], out thisFolder, folderCache))
             {
                 ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                 return;
@@ -960,7 +960,7 @@ namespace SilverSim.Viewer.AISv3
             var folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                if(!TryFindFolder(req, elements[1], out folder, folderCache))
+                if(!TryFindFolder(req, elements[4], out folder, folderCache))
                 {
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;
@@ -991,7 +991,7 @@ namespace SilverSim.Viewer.AISv3
             var folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                if(!TryFindFolder(req, elements[1], out folder, folderCache))
+                if(!TryFindFolder(req, elements[4], out folder, folderCache))
                 {
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;
@@ -1003,7 +1003,7 @@ namespace SilverSim.Viewer.AISv3
                 return;
             }
 
-            if (elements.Length == 2)
+            if (elements.Length == 5)
             {
                 if (folder.InventoryType != InventoryType.Unknown)
                 {
@@ -1021,7 +1021,7 @@ namespace SilverSim.Viewer.AISv3
                 }
                 SuccessResponse(req);
             }
-            else if(elements.Length == 3 && elements[2] == "children")
+            else if(elements.Length == 6 && elements[2] == "children")
             {
                 try
                 {

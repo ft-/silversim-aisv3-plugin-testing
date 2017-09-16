@@ -166,7 +166,7 @@ namespace SilverSim.Viewer.AISv3
                 { "everyone_mask", (int)item.Permissions.EveryOne }
             };
             resmap.Add("permissions", perm_info);
-            resmap.Add("type", (int)item.InventoryType);
+            resmap.Add("type", (int)item.AssetType);
             resmap.Add("desc", item.Description);
             return resmap;
         }
