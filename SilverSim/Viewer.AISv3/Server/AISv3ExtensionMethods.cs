@@ -25,7 +25,7 @@ using SilverSim.Types.Inventory;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SilverSim.Viewer.AISv3
+namespace SilverSim.Viewer.AISv3.Server
 {
     public static class AISv3ExtensionMethods
     {

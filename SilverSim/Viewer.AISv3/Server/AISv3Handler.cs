@@ -31,7 +31,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 
-namespace SilverSim.Viewer.AISv3
+namespace SilverSim.Viewer.AISv3.Server
 {
     public static class AISv3Handler
     {

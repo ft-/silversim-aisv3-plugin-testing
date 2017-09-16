@@ -24,7 +24,7 @@ using SilverSim.Main.Common.HttpServer;
 using SilverSim.Viewer.Core;
 using System.Net;
 
-namespace SilverSim.Viewer.AISv3
+namespace SilverSim.Viewer.AISv3.Server
 {
     [PluginName("SimInventoryAPIv3")]
     public sealed class SimInventoryAPIv3 : ICapabilityExtender, IPlugin
