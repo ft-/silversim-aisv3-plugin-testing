@@ -94,8 +94,8 @@ namespace SilverSim.AISv3.Server
                     AnArray items;
                     if(embedded.TryGetValue("items", out items))
                     {
-                        /* make clone of array */
-                        foreach(IValue itemiv in new AnArray(items))
+                        var newitems = new Map();
+                        foreach(IValue itemiv in items)
                         {
                             var itemdata = itemiv as Map;
                             if(itemdata == null)
@@ -107,16 +107,19 @@ namespace SilverSim.AISv3.Server
                                 InventoryItem item = itemdata.ItemFromAisV3(req.Agent, toParentFolderId, req.FullPrefixUrl);
                                 req.InventoryService.Item.Add(item);
                                 created_items.Add(item.ID);
+                                newitems.Add(item.ID.ToString(), itemdata);
                             }
                             catch
                             {
-                                items.Remove(itemiv);
+                                /* intentionally left empty */
                             }
                         }
+                        embedded["items"] = newitems;
                     }
                     AnArray links;
                     if(embedded.TryGetValue("links", out links))
                     {
+                        var newlinks = new Map();
                         foreach (IValue linkiv in links)
                         {
                             var linkdata = linkiv as Map;
@@ -129,18 +132,20 @@ namespace SilverSim.AISv3.Server
                                 InventoryItem link = linkdata.ItemFromAisV3(req.Agent, toParentFolderId, req.FullPrefixUrl);
                                 req.InventoryService.Item.Add(link);
                                 created_items.Add(link.ID);
+                                newlinks.Add(link.ID.ToString(), linkdata);
                             }
                             catch
                             {
-                                items.Remove(linkiv);
+                                /* intentionally left empty */
                             }
                         }
+                        embedded["links"] = newlinks;
                     }
                     AnArray categories;
                     if(embedded.TryGetValue("categories", out categories))
                     {
-                        /* clone array here for enum */
-                        foreach (IValue categoryiv in new AnArray(categories))
+                        var newcategories = new Map();
+                        foreach (IValue categoryiv in categories)
                         {
                             var categorydata = categoryiv as Map;
                             if (categorydata == null)
@@ -153,12 +158,14 @@ namespace SilverSim.AISv3.Server
                                 req.InventoryService.Folder.Add(newfolder);
                                 created_categories.Add(newfolder.ID);
                                 stack.Add(categorydata);
+                                newcategories.Add(newfolder.ID.ToString(), categorydata);
                             }
                             catch
                             {
-                                categories.Remove(categoryiv);
+                                /* intentionally left empty */
                             }
                         }
+                        embedded["categories"] = newcategories;
                     }
                 }
             }
