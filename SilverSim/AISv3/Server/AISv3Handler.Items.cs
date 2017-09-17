@@ -48,6 +48,10 @@ namespace SilverSim.AISv3.Server
                     ItemHandler_Copy(req, elements);
                     break;
 
+                case "MOVE":
+                    ItemHandler_Move(req, elements);
+                    break;
+
                 case "DELETE":
                     ItemHandler_Delete(req, elements);
                     break;
@@ -271,12 +275,12 @@ namespace SilverSim.AISv3.Server
             }
 
             string destinationurl = req.HttpRequest["Destination"];
-            if (!destinationurl.StartsWith(req.RawPrefixUrl))
+            if (!destinationurl.StartsWith(req.FullPrefixUrl))
             {
                 ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
                 return;
             }
-            destinationurl = destinationurl.Substring(req.RawPrefixUrl.Length);
+            destinationurl = destinationurl.Substring(req.FullPrefixUrl.Length);
             string[] destelements;
             string[] destoptions;
             if (!TrySplitURL(destinationurl, out destelements, out destoptions))
@@ -318,6 +322,71 @@ namespace SilverSim.AISv3.Server
             try
             {
                 req.InventoryService.Item.Add(item);
+            }
+            catch
+            {
+                ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.QueryFailed, "Forbidden");
+                return;
+            }
+            SuccessResponse(req);
+        }
+
+        private static void ItemHandler_Move(Request req, string[] elements)
+        {
+            UUID itemid;
+
+            if (!UUID.TryParse(elements[1], out itemid))
+            {
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
+                return;
+            }
+
+            string destinationurl = req.HttpRequest["Destination"];
+            if (!destinationurl.StartsWith(req.FullPrefixUrl))
+            {
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                return;
+            }
+            destinationurl = destinationurl.Substring(req.FullPrefixUrl.Length);
+            string[] destelements;
+            string[] destoptions;
+            if (!TrySplitURL(destinationurl, out destelements, out destoptions))
+            {
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
+                return;
+            }
+
+            if (destelements[0] != "category")
+            {
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
+                return;
+            }
+            InventoryFolder destFolder;
+            var folderCache = new Dictionary<UUID, InventoryFolder>();
+            try
+            {
+                if (!TryFindFolder(req, destelements[1], out destFolder, folderCache))
+                {
+                    ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                    return;
+                }
+            }
+            catch
+            {
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
+                return;
+            }
+
+            InventoryItem item;
+            if (!req.InventoryService.Item.TryGetValue(req.Agent.ID, itemid, out item))
+            {
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source item gone");
+                return;
+            }
+
+            try
+            {
+                req.InventoryService.Item.Move(req.Agent.ID, itemid, destFolder.ID);
             }
             catch
             {

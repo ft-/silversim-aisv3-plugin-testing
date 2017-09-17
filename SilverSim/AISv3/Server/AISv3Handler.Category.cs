@@ -19,6 +19,7 @@
 // obligated to do so. If you do not wish to do so, delete this
 // exception statement from your version.
 
+using SilverSim.Main.Common.HttpServer;
 using SilverSim.Types;
 using SilverSim.Types.Asset;
 using SilverSim.Types.Inventory;
@@ -74,6 +75,10 @@ namespace SilverSim.AISv3.Server
 
                 case "PATCH":
                     FolderHandler_Patch(req, elements);
+                    break;
+
+                case "MOVE":
+                    FolderHandler_Move(req, elements);
                     break;
 
                 case "DELETE":
@@ -164,6 +169,76 @@ namespace SilverSim.AISv3.Server
             }
 
             SuccessResponse(req, resdata);
+        }
+
+        private static void FolderHandler_Move(Request req, string[] elements)
+        {
+            UUID folderid;
+
+            if (!UUID.TryParse(elements[1], out folderid))
+            {
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
+                return;
+            }
+
+            string destinationurl = req.HttpRequest["Destination"];
+            if (!destinationurl.StartsWith(req.FullPrefixUrl))
+            {
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                return;
+            }
+            destinationurl = destinationurl.Substring(req.FullPrefixUrl.Length);
+            string[] destelements;
+            string[] destoptions;
+            if (!TrySplitURL(destinationurl, out destelements, out destoptions))
+            {
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
+                return;
+            }
+
+            if (destelements[0] != "category")
+            {
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
+                return;
+            }
+            InventoryFolder destFolder;
+            var folderCache = new Dictionary<UUID, InventoryFolder>();
+            try
+            {
+                if (!TryFindFolder(req, destelements[1], out destFolder, folderCache))
+                {
+                    ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                    return;
+                }
+            }
+            catch (HttpResponse.ConnectionCloseException)
+            {
+                /* we need to pass it */
+                throw;
+            }
+            catch
+            {
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
+                return;
+            }
+
+            InventoryFolder folderToMove;
+            if (!req.InventoryService.Folder.TryGetValue(req.Agent.ID, folderid, out folderToMove))
+            {
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source item gone");
+                return;
+            }
+
+            try
+            {
+                req.InventoryService.Folder.Move(req.Agent.ID, folderid, destFolder.ID);
+            }
+            catch
+            {
+                ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.QueryFailed, "Forbidden");
+                return;
+            }
+            SuccessResponse(req);
         }
 
         private static void FolderHandler_Patch(Request req, string[] elements)

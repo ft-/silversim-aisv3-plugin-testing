@@ -25,7 +25,6 @@ using SilverSim.Types;
 using SilverSim.Types.Asset;
 using SilverSim.Types.Inventory;
 using SilverSim.Types.StructuredData.Llsd;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
