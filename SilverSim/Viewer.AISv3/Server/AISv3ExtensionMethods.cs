@@ -29,14 +29,26 @@ namespace SilverSim.Viewer.AISv3.Server
 {
     public static class AISv3ExtensionMethods
     {
-        public static Map ToAisV3(this InventoryFolder folder) => new Map
+        public static Map ToAisV3Href(this string uri) => new Map { { "href", uri } };
+
+        public static Map ToAisV3(this InventoryFolder folder, string fullprefixuri) => new Map
         {
             { "name", folder.Name },
             { "type_default", (int)folder.InventoryType },
             { "parent_id", folder.ParentFolderID },
             { "version", folder.Version },
             { "agent_id", folder.Owner.ID },
-            { "category_id", folder.ID }
+            { "category_id", folder.ID },
+            {
+                "_links", new Map
+                {
+                    { "self", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString()) },
+                    { "parent", ToAisV3Href(fullprefixuri + "/category/" + folder.ParentFolderID.ToString()) },
+                    { "links", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString() + "/links") },
+                    { "items", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString() + "/items") },
+                    { "children", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString() + "/children") }
+                }
+            }
         };
 
         public static List<InventoryItem>ItemsFromAisV3(this AnArray items_array, UUI agent, UUID parentFolderId)
@@ -134,40 +146,42 @@ namespace SilverSim.Viewer.AISv3.Server
             return items;
         }
 
-        public static Map ToAisV3(this InventoryItem item)
+        public static Map ToAisV3(this InventoryItem item, string fullprefixuri)
         {
             var resmap = new Map
             {
-                { "asset_id", item.AssetID },
                 { "inv_type", (int)item.InventoryType },
                 { "name", item.Name }
             };
-            var sale_info = new Map
+            if(item.AssetType == AssetType.Link || item.AssetType == AssetType.LinkFolder)
             {
-                { "sale_price", item.SaleInfo.Price },
-                { "sale_type", (int)item.SaleInfo.Type }
-            };
-            resmap.Add("sale_info", sale_info);
+                resmap.Add("linked_id", item.AssetID);
+            }
+            else
+            {
+                resmap.Add("asset_id", item.AssetID);
+            }
             resmap.Add("created_at", item.CreationDate.DateTimeToUnixTime());
             resmap.Add("parent_id", item.ParentFolderID);
             resmap.Add("flags", (int)item.Flags);
             resmap.Add("agent_id", item.Owner.ID);
             resmap.Add("item_id", item.ID);
-            var perm_info = new Map
-            {
-                { "base_mask", (int)item.Permissions.Base },
-                { "group_mask", (int)item.Permissions.Group },
-                { "last_owner_id", item.LastOwner.ID },
-                { "owner_id", item.Owner.ID },
-                { "creator_id", item.Creator.ID },
-                { "next_owner_mask", (int)item.Permissions.NextOwner },
-                { "owner_mask", (int)item.Permissions.Current },
-                { "group_id", item.Group.ID },
-                { "everyone_mask", (int)item.Permissions.EveryOne }
-            };
-            resmap.Add("permissions", perm_info);
             resmap.Add("type", (int)item.AssetType);
             resmap.Add("desc", item.Description);
+            var linkref = new Map
+            {
+                { "self", ToAisV3Href(fullprefixuri + "/item/" + item.ID.ToString()) },
+                { "parent", ToAisV3Href(fullprefixuri + "/category/" + item.ParentFolderID.ToString()) }
+            };
+            if(item.AssetType == AssetType.Link)
+            {
+                linkref.Add("item", ToAisV3Href(fullprefixuri + "/item/" + item.AssetID.ToString()));
+            }
+            else if(item.AssetType == AssetType.LinkFolder)
+            {
+                linkref.Add("category", ToAisV3Href(fullprefixuri + "/category/" + item.AssetID.ToString()));
+            }
+            resmap.Add("_links", linkref);
             return resmap;
         }
 

@@ -268,29 +268,42 @@ namespace SilverSim.Viewer.AISv3.Client
 
         void IInventoryItemServiceInterface.Update(InventoryItem item)
         {
-            var m = new Map
+            Map m;
+            if (item.AssetType == AssetType.Link || item.AssetType == AssetType.LinkFolder)
             {
-                { "name", item.Name },
-                { "desc", item.Description },
-                { "flags", (int)item.Flags },
-                { "asset_id", item.AssetID },
+                m = new Map
                 {
-                    "sale_info", new Map
-                    {
-                        { "sale_price", item.SaleInfo.Price },
-                        { "sale_type", (int)item.SaleInfo.Type }
-                    }
-                },
+                    { "name", item.Name },
+                    { "desc", item.Description },
+                    { "linked_id", item.AssetID }
+                };
+            }
+            else
+            {
+                m = new Map
                 {
-                    "permisssions", new Map
+                    { "name", item.Name },
+                    { "desc", item.Description },
+                    { "flags", (int)item.Flags },
+                    { "asset_id", item.AssetID },
                     {
-                        { "owner_mask", (int)item.Permissions.Current },
-                        { "everyone_mask", (int)item.Permissions.EveryOne },
-                        { "next_owner_mask", (int)item.Permissions.NextOwner },
-                        { "group_mask", (int)item.Permissions.Group }
+                        "sale_info", new Map
+                        {
+                            { "sale_price", item.SaleInfo.Price },
+                            { "sale_type", (int)item.SaleInfo.Type }
+                        }
+                    },
+                    {
+                        "permisssions", new Map
+                        {
+                            { "owner_mask", (int)item.Permissions.Current },
+                            { "everyone_mask", (int)item.Permissions.EveryOne },
+                            { "next_owner_mask", (int)item.Permissions.NextOwner },
+                            { "group_mask", (int)item.Permissions.Group }
+                        }
                     }
-                }
-            };
+                };
+            }
 
             byte[] reqdata;
             using (var ms = new MemoryStream())
