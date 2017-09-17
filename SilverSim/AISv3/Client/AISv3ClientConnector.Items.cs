@@ -29,7 +29,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Web;
 
-namespace SilverSim.Viewer.AISv3.Client
+namespace SilverSim.AISv3.Client
 {
     public partial class AISv3ClientConnector : IInventoryItemServiceInterface
     {

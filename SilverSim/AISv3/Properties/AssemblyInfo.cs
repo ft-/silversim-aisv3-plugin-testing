@@ -21,6 +21,6 @@
 
 using System.Reflection;
 
-[assembly: AssemblyTitle("Viewer Core Protocol Implementation - AISv3 Module")]
+[assembly: AssemblyTitle("AISv3 Protocol Implementation")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]

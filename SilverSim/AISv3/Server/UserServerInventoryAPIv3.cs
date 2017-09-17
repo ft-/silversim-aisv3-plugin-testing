@@ -32,7 +32,7 @@ using SilverSim.Types.TravelingData;
 using System.ComponentModel;
 using System.Net;
 
-namespace SilverSim.Viewer.AISv3.Server
+namespace SilverSim.AISv3.Server
 {
     [PluginName("AISv3Handler")]
     [Description("AISv3 user inventory server")]

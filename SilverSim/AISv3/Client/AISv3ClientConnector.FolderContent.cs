@@ -28,7 +28,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Web;
 
-namespace SilverSim.Viewer.AISv3.Client
+namespace SilverSim.AISv3.Client
 {
     public sealed partial class AISv3ClientConnector : IInventoryFolderContentServiceInterface
     {

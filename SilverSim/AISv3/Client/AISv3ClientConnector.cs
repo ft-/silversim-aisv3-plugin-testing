@@ -28,7 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace SilverSim.Viewer.AISv3.Client
+namespace SilverSim.AISv3.Client
 {
     [PluginName("AISv3Client")]
     [Description("AISv3 client connector")]
@@ -40,7 +40,7 @@ namespace SilverSim.Viewer.AISv3.Client
         public AISv3ClientConnector(IConfig ownSection)
         {
             TimeoutMs = 20000;
-            m_CapabilityUri = ownSection.GetString("Uri");
+            m_CapabilityUri = ownSection.GetString("URI");
             if(!m_CapabilityUri.EndsWith("/"))
             {
                 m_CapabilityUri += "/";

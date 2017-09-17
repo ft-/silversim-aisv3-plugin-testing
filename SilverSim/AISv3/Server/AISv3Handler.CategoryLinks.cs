@@ -28,7 +28,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 
-namespace SilverSim.Viewer.AISv3.Server
+namespace SilverSim.AISv3.Server
 {
     public static partial class AISv3Handler
     {
