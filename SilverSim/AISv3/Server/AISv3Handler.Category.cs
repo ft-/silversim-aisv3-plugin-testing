@@ -146,6 +146,7 @@ namespace SilverSim.AISv3.Server
                         ["categories"] = embeddedcategories,
                         ["links"] = embeddedlinks
                     };
+                    e.Embedded.Add("_embedded", embedded);
                     foreach (InventoryItem item in e.Content.Items)
                     {
                         if (item.AssetType == AssetType.Link || item.AssetType == AssetType.LinkFolder)
@@ -309,6 +310,11 @@ namespace SilverSim.AISv3.Server
             {
                 req.InventoryService.Folder.Update(folder);
             }
+            catch(InventoryFolderNotFoundException)
+            {
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Category gone");
+                return;
+            }
             catch (Exception)
             {
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
@@ -340,11 +346,6 @@ namespace SilverSim.AISv3.Server
                 return;
             }
 
-            if (folder.InventoryType != InventoryType.Unknown)
-            {
-                ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.NotSupported, "Forbidden");
-                return;
-            }
             try
             {
                 req.InventoryService.Folder.Delete(req.Agent.ID, folder.ID);

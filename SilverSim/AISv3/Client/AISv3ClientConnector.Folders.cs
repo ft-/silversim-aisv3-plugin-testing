@@ -143,7 +143,18 @@ namespace SilverSim.AISv3.Client
 
         void IInventoryFolderServiceInterface.Delete(UUID principalID, UUID folderID)
         {
-            HttpClient.DoRequest("DELETE", $"{m_CapabilityUri}category/{folderID}", null, string.Empty, string.Empty, false, TimeoutMs);
+            try
+            {
+                HttpClient.DoRequest("DELETE", $"{m_CapabilityUri}category/{folderID}", null, string.Empty, string.Empty, false, TimeoutMs);
+            }
+            catch(HttpException e)
+            {
+                if(e.GetHttpCode() == 404)
+                {
+                    throw new InventoryFolderNotFoundException(folderID);
+                }
+                throw;
+            }
         }
 
         List<UUID> IInventoryFolderServiceInterface.Delete(UUID principalID, List<UUID> folderIDs)

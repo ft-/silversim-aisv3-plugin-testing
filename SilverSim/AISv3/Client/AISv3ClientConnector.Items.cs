@@ -95,6 +95,11 @@ namespace SilverSim.AISv3.Client
             itemdata.Add("type", (int)item.AssetType);
             var perminfo = new Map();
             itemdata.Add("permissions", perminfo);
+            perminfo.Add("owner_id", item.Owner.ID);
+            perminfo.Add("last_owner_id", item.LastOwner.ID);
+            perminfo.Add("creator_id", item.Creator.ID);
+            itemdata.Add("agent_id", item.Owner.ID);
+            itemdata.Add("group_id", item.Group.ID);
             perminfo.Add("owner_mask", (int)item.Permissions.Current);
             perminfo.Add("base_mask", (int)item.Permissions.Base);
             perminfo.Add("next_owner_mask", (int)item.Permissions.NextOwner);
@@ -121,7 +126,7 @@ namespace SilverSim.AISv3.Client
             {
                 if (e.GetHttpCode() == 404)
                 {
-                    throw new InventoryFolderNotFoundException(item.ParentFolderID);
+                    throw new InvalidParentFolderIdException();
                 }
                 throw;
             }
@@ -153,7 +158,18 @@ namespace SilverSim.AISv3.Client
 
         void IInventoryItemServiceInterface.Delete(UUID principalID, UUID id)
         {
-            HttpClient.DoRequest("DELETE", $"{m_CapabilityUri}item/{id}", null, string.Empty, string.Empty, false, TimeoutMs);
+            try
+            {
+                HttpClient.DoRequest("DELETE", $"{m_CapabilityUri}item/{id}", null, string.Empty, string.Empty, false, TimeoutMs);
+            }
+            catch(HttpException e)
+            {
+                if(e.GetHttpCode() == 404)
+                {
+                    throw new InventoryItemNotFoundException(id);
+                }
+                throw;
+            }
         }
 
         List<UUID> IInventoryItemServiceInterface.Delete(UUID principalID, List<UUID> ids)
@@ -219,33 +235,6 @@ namespace SilverSim.AISv3.Client
             {
                 throw new InvalidDataException("Wrong response received");
             }
-            var links = resmap["_links"] as Map;
-            if (links == null)
-            {
-                throw new InvalidDataException("Wrong response received");
-            }
-            var parent = links["parent"] as Map;
-            if (parent == null)
-            {
-                throw new InvalidDataException("Wrong response received");
-            }
-            if (!parent.TryGetValue("href", out iv))
-            {
-                throw new InvalidDataException("Wrong response received");
-            }
-
-            string parenthref = iv.ToString();
-            UUID parentid;
-            if (!UUID.TryParse(parenthref.Substring(parenthref.Length - 36), out parentid))
-            {
-                InventoryFolder actFolder;
-                if (!TryGetValue(parenthref, out actFolder))
-                {
-                    item = default(InventoryItem);
-                    return false;
-                }
-                parentid = actFolder.ID;
-            }
 
             item = new InventoryItem(resmap["item_id"].AsUUID)
             {
@@ -265,6 +254,8 @@ namespace SilverSim.AISv3.Client
             item.Permissions.Group = (InventoryPermissionsMask)perminfo["group_mask"].AsUInt;
             item.LastOwner.ID = perminfo["last_owner_id"].AsUUID;
             item.Owner.ID = perminfo["owner_id"].AsUUID;
+            item.Creator.ID = perminfo["creator_id"].AsUUID;
+            item.ParentFolderID = resmap["parent_id"].AsUUID;
             item.Permissions.NextOwner = (InventoryPermissionsMask)perminfo["next_owner_mask"].AsUInt;
             item.Permissions.Current = (InventoryPermissionsMask)perminfo["owner_mask"].AsUInt;
             item.Group.ID = perminfo["group_id"].AsUUID;
@@ -324,8 +315,19 @@ namespace SilverSim.AISv3.Client
                 reqdata = ms.ToArray();
             }
 
-            HttpClient.DoRequest("PATCH", $"{m_CapabilityUri}item/{item.ID}", null, "application/llsd+xml", reqdata.Length,
-                (Stream s) => s.Write(reqdata, 0, reqdata.Length), false, TimeoutMs);
+            try
+            {
+                HttpClient.DoRequest("PATCH", $"{m_CapabilityUri}item/{item.ID}", null, "application/llsd+xml", reqdata.Length,
+                    (Stream s) => s.Write(reqdata, 0, reqdata.Length), false, TimeoutMs);
+            }
+            catch(HttpException e)
+            {
+                if(e.GetHttpCode() == 404)
+                {
+                    throw new InventoryItemNotFoundException(item.ID);
+                }
+                throw;
+            }
         }
     }
 }

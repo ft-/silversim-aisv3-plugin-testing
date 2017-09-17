@@ -84,6 +84,7 @@ namespace SilverSim.AISv3.Server
                     {
                         ["categories"] = embeddedcategories,
                     };
+                    e.Embedded.Add("_embedded", embedded);
                     foreach (InventoryFolder folder in e.Content.Folders)
                     {
                         Map folderdata = folder.ToAisV3(req.FullPrefixUrl);
