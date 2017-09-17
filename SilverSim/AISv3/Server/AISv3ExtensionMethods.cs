@@ -155,7 +155,7 @@ namespace SilverSim.AISv3.Server
             {
                 if (perm_info.TryGetValue("owner_mask", out intval))
                 {
-                    item.Permissions.NextOwner = (InventoryPermissionsMask)intval.AsInt;
+                    item.Permissions.Current = (InventoryPermissionsMask)intval.AsInt;
                 }
                 if (perm_info.TryGetValue("base_mask", out intval))
                 {
@@ -172,6 +172,19 @@ namespace SilverSim.AISv3.Server
                 if (perm_info.TryGetValue("everyone_mask", out intval))
                 {
                     item.Permissions.EveryOne = (InventoryPermissionsMask)intval.AsInt;
+                }
+                UUID uuid;
+                if(perm_info.TryGetValue("last_owner_id", out uuid))
+                {
+                    item.LastOwner.ID = uuid;
+                }
+                if (perm_info.TryGetValue("creator_id", out uuid))
+                {
+                    item.Creator.ID = uuid;
+                }
+                if(perm_info.TryGetValue("group_id", out uuid))
+                {
+                    item.Group.ID = uuid;
                 }
             }
 

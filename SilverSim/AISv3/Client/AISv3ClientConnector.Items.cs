@@ -99,7 +99,7 @@ namespace SilverSim.AISv3.Client
             perminfo.Add("last_owner_id", item.LastOwner.ID);
             perminfo.Add("creator_id", item.Creator.ID);
             itemdata.Add("agent_id", item.Owner.ID);
-            itemdata.Add("group_id", item.Group.ID);
+            perminfo.Add("group_id", item.Group.ID);
             perminfo.Add("owner_mask", (int)item.Permissions.Current);
             perminfo.Add("base_mask", (int)item.Permissions.Base);
             perminfo.Add("next_owner_mask", (int)item.Permissions.NextOwner);
