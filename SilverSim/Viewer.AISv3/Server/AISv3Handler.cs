@@ -138,7 +138,7 @@ namespace SilverSim.Viewer.AISv3.Server
             }
         }
 
-        public static bool TryGetFolder(Request request, UUID folderId, out InventoryFolder folder, Dictionary<UUID, InventoryFolder> folderCache)
+        private static bool TryGetFolder(Request request, UUID folderId, out InventoryFolder folder, Dictionary<UUID, InventoryFolder> folderCache)
         {
             if(folderCache.TryGetValue(folderId, out folder))
             {
@@ -152,7 +152,7 @@ namespace SilverSim.Viewer.AISv3.Server
             return false;
         }
 
-        public static string GetFolderHref(Request request, UUID folderId, Dictionary<UUID, InventoryFolder> folderCache)
+        private static string GetFolderHref(Request request, UUID folderId, Dictionary<UUID, InventoryFolder> folderCache)
         {
             InventoryFolder folder;
             if(TryGetFolder(request, folderId, out folder, folderCache))
@@ -162,7 +162,7 @@ namespace SilverSim.Viewer.AISv3.Server
             return request.FullPrefixUrl + "/category/unknown";
         }
 
-        public static string GetFolderHref(Request request, InventoryFolder folder, Dictionary<UUID, InventoryFolder> folderCache)
+        private static string GetFolderHref(Request request, InventoryFolder folder, Dictionary<UUID, InventoryFolder> folderCache)
         {
             InventoryFolder parentFolder;
             if(folder.ParentFolderID == UUID.Zero)

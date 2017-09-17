@@ -198,19 +198,19 @@ namespace SilverSim.Viewer.AISv3.Server
                 {
                     if (perminfo.TryGetValue("owner_mask", out iv))
                     {
-                        item.Permissions.Current = (InventoryPermissionsMask)iv.AsInt;
+                        item.Permissions.Current = (InventoryPermissionsMask)iv.AsInt & item.Permissions.Base;
                     }
                     if(perminfo.TryGetValue("everyone_mask", out iv))
                     {
-                        item.Permissions.EveryOne = (InventoryPermissionsMask)iv.AsInt;
+                        item.Permissions.EveryOne = (InventoryPermissionsMask)iv.AsInt & item.Permissions.Base;
                     }
                     if (perminfo.TryGetValue("next_owner_mask", out iv))
                     {
-                        item.Permissions.NextOwner = (InventoryPermissionsMask)iv.AsInt;
+                        item.Permissions.NextOwner = (InventoryPermissionsMask)iv.AsInt & item.Permissions.Base;
                     }
                     if (perminfo.TryGetValue("group_mask", out iv))
                     {
-                        item.Permissions.Group = (InventoryPermissionsMask)iv.AsInt;
+                        item.Permissions.Group = (InventoryPermissionsMask)iv.AsInt & item.Permissions.Base;
                     }
                 }
             }
