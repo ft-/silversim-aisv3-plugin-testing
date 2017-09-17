@@ -52,10 +52,10 @@ namespace SilverSim.AISv3.Server
         /* prefix url is /CAPS/InventoryAPIv3/<agentid>/ */
         public UserServerInventoryAPIv3(IConfig ownSection)
         {
-            m_PresenceServiceName = ownSection.GetString("PresenceService");
-            m_TravelingDataServiceName = ownSection.GetString("TravelingDataService");
-            m_InventoryServiceName = ownSection.GetString("InventoryService");
-            m_UserAccountServiceName = ownSection.GetString("UserAccountService");
+            m_PresenceServiceName = ownSection.GetString("PresenceService", "PresenceService");
+            m_TravelingDataServiceName = ownSection.GetString("TravelingDataService", "TravelingDataService");
+            m_InventoryServiceName = ownSection.GetString("InventoryService", "InventoryService");
+            m_UserAccountServiceName = ownSection.GetString("UserAccountService", "UserAccountService");
         }
 
         public void Startup(ConfigurationLoader loader)

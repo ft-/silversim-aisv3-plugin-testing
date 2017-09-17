@@ -35,9 +35,9 @@ namespace SilverSim.AISv3.Server
         #region Folder Handling
         private static void FolderHandler(Request req, string[] elements)
         {
-            if(elements.Length == 6)
+            if(elements.Length == 3)
             {
-                switch(elements[5])
+                switch(elements[2])
                 {
                     case "children":
                         FolderChildren_Handler(req, elements);
@@ -104,7 +104,7 @@ namespace SilverSim.AISv3.Server
         {
             var folderCache = new Dictionary<UUID, InventoryFolder>();
             InventoryFolder thisFolder;
-            if (!TryFindFolder(req, elements[4], out thisFolder, folderCache))
+            if (!TryFindFolder(req, elements[1], out thisFolder, folderCache))
             {
                 ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                 return;

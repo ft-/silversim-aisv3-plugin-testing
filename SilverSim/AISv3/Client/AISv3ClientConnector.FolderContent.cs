@@ -81,7 +81,8 @@ namespace SilverSim.AISv3.Client
             {
                 if (e.GetHttpCode() == 404)
                 {
-                    throw new InventoryFolderNotFoundException(folderID);
+                    inventoryFolderContent = default(InventoryFolderContent);
+                    return false;
                 }
                 throw;
             }

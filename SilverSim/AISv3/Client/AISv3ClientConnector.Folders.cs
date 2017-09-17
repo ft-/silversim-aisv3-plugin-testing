@@ -34,7 +34,18 @@ namespace SilverSim.AISv3.Client
 {
     public partial class AISv3ClientConnector : IInventoryFolderServiceInterface
     {
-        InventoryFolder IInventoryFolderServiceInterface.this[UUID key] => throw new NotImplementedException();
+        InventoryFolder IInventoryFolderServiceInterface.this[UUID key]
+        {
+            get
+            {
+                InventoryFolder folder;
+                if (!Folder.TryGetValue(key, out folder))
+                {
+                    throw new InventoryFolderNotFoundException(key);
+                }
+                return folder;
+            }
+        }
 
         InventoryFolder IInventoryFolderServiceInterface.this[UUID principalID, AssetType type]
         {
@@ -155,13 +166,13 @@ namespace SilverSim.AISv3.Client
 
         private static List<InventoryFolder> ExtractFolders(Map m)
         {
-            var embmap = m["_embedded"] as Map;
-            if (embmap == null)
+            Map embmap;
+            if(!m.TryGetValue("_embedded", out embmap))
             {
                 return new List<InventoryFolder>();
             }
-            var foldermap = embmap["categories"] as Map;
-            if (foldermap == null)
+            Map foldermap;
+            if(!embmap.TryGetValue("categories", out foldermap))
             {
                 return new List<InventoryFolder>();
             }
@@ -189,55 +200,87 @@ namespace SilverSim.AISv3.Client
 
         private static List<InventoryItem> ExtractItems(Map m)
         {
-            var embmap = m["_embedded"] as Map;
-            if (embmap == null)
+            Map embmap;
+            if (!m.TryGetValue("_embedded", out embmap))
             {
                 return new List<InventoryItem>();
             }
-            var itemmap = embmap["items"] as Map;
-            if (itemmap == null)
-            {
-                return new List<InventoryItem>();
-            }
+            Map itemmap;
 
             var result = new List<InventoryItem>();
-            foreach (KeyValuePair<string, IValue> kvp in itemmap)
+            if (embmap.TryGetValue("items", out itemmap))
             {
-                var itemdata = kvp.Value as Map;
-                if (itemdata == null)
+                foreach (KeyValuePair<string, IValue> kvp in itemmap)
                 {
-                    continue;
+                    var itemdata = kvp.Value as Map;
+                    if (itemdata == null)
+                    {
+                        continue;
+                    }
+                    var saleinfo = itemdata["sale_info"] as Map;
+                    var perminfo = itemdata["permissions"] as Map;
+                    var item = new InventoryItem(itemdata["item_id"].AsUUID)
+                    {
+                        AssetID = itemdata["asset_id"].AsUUID,
+                        InventoryType = (InventoryType)itemdata["inv_type"].AsInt,
+                        Name = itemdata["name"].ToString(),
+                        SaleInfo = new InventoryItem.SaleInfoData
+                        {
+                            Price = saleinfo["sale_price"].AsInt,
+                            Type = (InventoryItem.SaleInfoData.SaleType)saleinfo["sale_type"].AsInt
+                        },
+                        CreationDate = Date.UnixTimeToDateTime(itemdata["created_at"].AsULong),
+                        ParentFolderID = itemdata["parent_id"].AsUUID,
+                        Flags = (InventoryFlags)itemdata["flags"].AsInt,
+                        Owner = new UUI(perminfo["owner_id"].AsUUID),
+                        LastOwner = new UUI(perminfo["last_owner_id"].AsUUID),
+                        Group = new UGI(perminfo["group_id"].AsUUID),
+                        Permissions = new InventoryPermissionsData
+                        {
+                            Base = (InventoryPermissionsMask)perminfo["base_mask"].AsInt,
+                            Group = (InventoryPermissionsMask)perminfo["group_mask"].AsInt,
+                            NextOwner = (InventoryPermissionsMask)perminfo["next_owner_mask"].AsInt,
+                            Current = (InventoryPermissionsMask)perminfo["owner_mask"].AsInt,
+                            EveryOne = (InventoryPermissionsMask)perminfo["everyone_mask"].AsInt
+                        },
+                        AssetType = (AssetType)itemdata["type"].AsInt,
+                        Description = itemdata["desc"].ToString()
+                    };
+                    result.Add(item);
                 }
-                var saleinfo = itemdata["sale_info"] as Map;
-                var perminfo = itemdata["permissions"] as Map;
-                var item = new InventoryItem(itemdata["item_id"].AsUUID)
+            }
+            if (embmap.TryGetValue("links", out itemmap))
+            {
+                foreach (KeyValuePair<string, IValue> kvp in itemmap)
                 {
-                    AssetID = itemdata["asset_id"].AsUUID,
-                    InventoryType = (InventoryType)itemdata["inv_type"].AsInt,
-                    Name = itemdata["name"].ToString(),
-                    SaleInfo = new InventoryItem.SaleInfoData
+                    var itemdata = kvp.Value as Map;
+                    if (itemdata == null)
                     {
-                        Price = saleinfo["sale_price"].AsInt,
-                        Type = (InventoryItem.SaleInfoData.SaleType)saleinfo["sale_type"].AsInt
-                    },
-                    CreationDate = Date.UnixTimeToDateTime(itemdata["created_at"].AsULong),
-                    ParentFolderID = itemdata["parent_id"].AsUUID,
-                    Flags = (InventoryFlags)itemdata["flags"].AsInt,
-                    Owner = new UUI(perminfo["owner_id"].AsUUID),
-                    LastOwner = new UUI(perminfo["last_owner_id"].AsUUID),
-                    Group = new UGI(perminfo["group_id"].AsUUID),
-                    Permissions = new InventoryPermissionsData
+                        continue;
+                    }
+                    var item = new InventoryItem(itemdata["item_id"].AsUUID)
                     {
-                        Base = (InventoryPermissionsMask)perminfo["base_mask"].AsInt,
-                        Group = (InventoryPermissionsMask)perminfo["group_mask"].AsInt,
-                        NextOwner = (InventoryPermissionsMask)perminfo["next_owner_mask"].AsInt,
-                        Current = (InventoryPermissionsMask)perminfo["owner_mask"].AsInt,
-                        EveryOne = (InventoryPermissionsMask)perminfo["everyone_mask"].AsInt
-                    },
-                    AssetType = (AssetType)itemdata["type"].AsInt,
-                    Description = itemdata["desc"].ToString()
-                };
-                result.Add(item);
+                        AssetID = itemdata["linked_id"].AsUUID,
+                        InventoryType = (InventoryType)itemdata["inv_type"].AsInt,
+                        Name = itemdata["name"].ToString(),
+                        CreationDate = Date.UnixTimeToDateTime(itemdata["created_at"].AsULong),
+                        ParentFolderID = itemdata["parent_id"].AsUUID,
+                        Flags = (InventoryFlags)itemdata["flags"].AsInt,
+                        Owner = new UUI(itemdata["agent_id"].AsUUID),
+                        LastOwner = new UUI(itemdata["agent_id"].AsUUID),
+                        Permissions = new InventoryPermissionsData
+                        {
+                            Base = InventoryPermissionsMask.Every,
+                            Group = InventoryPermissionsMask.None,
+                            NextOwner = InventoryPermissionsMask.None,
+                            Current = InventoryPermissionsMask.Every,
+                            EveryOne = InventoryPermissionsMask.None
+                        },
+                        AssetType = (AssetType)itemdata["type"].AsInt,
+                        Description = itemdata["desc"].ToString()
+                    };
+                    result.Add(item);
+                }
             }
             return result;
         }
@@ -247,7 +290,7 @@ namespace SilverSim.AISv3.Client
             IValue iv;
             try
             {
-                using (Stream s = HttpClient.DoStreamGetRequest($"{m_CapabilityUri}category/{key}/categories?0,1", null, TimeoutMs))
+                using (Stream s = HttpClient.DoStreamGetRequest($"{m_CapabilityUri}category/{key}/categories?depth=1", null, TimeoutMs))
                 {
                     iv = LlsdXml.Deserialize(s);
                 }
@@ -331,7 +374,7 @@ namespace SilverSim.AISv3.Client
             IValue iv;
             try
             {
-                using (Stream s = HttpClient.DoStreamGetRequest(url + "?0,0", null, TimeoutMs))
+                using (Stream s = HttpClient.DoStreamGetRequest(url + "?depth=0", null, TimeoutMs))
                 {
                     iv = LlsdXml.Deserialize(s);
                 }
@@ -375,6 +418,10 @@ namespace SilverSim.AISv3.Client
 
                 case AssetType.Bodypart:
                     folderUrl = m_CapabilityUri + "category/bodypart";
+                    break;
+
+                case AssetType.CallingCard:
+                    folderUrl = m_CapabilityUri + "category/callcard";
                     break;
 
                 case AssetType.Clothing:

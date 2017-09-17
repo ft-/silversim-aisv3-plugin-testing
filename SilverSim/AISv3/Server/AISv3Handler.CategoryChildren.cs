@@ -53,7 +53,7 @@ namespace SilverSim.AISv3.Server
             var folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                if (!TryFindFolder(req, elements[4], out folder, folderCache))
+                if (!TryFindFolder(req, elements[1], out folder, folderCache))
                 {
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;

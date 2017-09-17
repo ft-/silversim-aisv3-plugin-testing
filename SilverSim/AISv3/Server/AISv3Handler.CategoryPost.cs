@@ -70,92 +70,100 @@ namespace SilverSim.AISv3.Server
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
+            Map resdata = folder.ToAisV3(req.FullPrefixUrl);
+            resdata.Add("_embedded", reqmap);
+            var created_categories = new AnArray();
+            var created_items = new AnArray();
+            resdata.Add("_created_categories", created_categories);
+            resdata.Add("_created_items", created_items);
+            var resfolders = new Map();
 
-            List<InventoryItem> items;
-            var itemlinks = new List<InventoryItem>();
-            var folders = new List<InventoryFolder>();
-            AnArray array;
-
-            items = reqmap.TryGetValue("items", out array) ?
-                items = array.ItemsFromAisV3(req.Agent, folder.ID) :
-                new List<InventoryItem>();
-
-            if (reqmap.TryGetValue<AnArray>("links", out array))
+            var stack = new List<Map>
             {
-                List<InventoryItem> links = array.LinksFromAisV3(req.Agent, folder.ID);
-                items.AddRange(from link in links where link.AssetType == AssetType.LinkFolder select link);
-                itemlinks.AddRange(from link in links where link.AssetType == AssetType.Link select link);
-            }
-
-            if (reqmap.TryGetValue<AnArray>("categories", out array))
+                resdata
+            };
+            while (stack.Count > 0)
             {
-                array.CategoriesFromAisV3(req.Agent, folder.ID, folders, items, itemlinks);
-            }
+                Map processFolder = stack[0];
+                stack.RemoveAt(0);
 
-            /* linkfolder entries do not need specific handling */
-            var linked_ids = new List<UUID>(from link in itemlinks select link.AssetID);
-            var dedup_linked_ids = new List<UUID>();
-            var rescreateditems = new AnArray();
-            foreach (UUID id in linked_ids)
-            {
-                if (!dedup_linked_ids.Contains(id))
+                Map embedded;
+                UUID toParentFolderId = processFolder["category_id"].AsUUID;
+                if(processFolder.TryGetValue("_embedded", out embedded))
                 {
-                    dedup_linked_ids.Add(id);
+                    AnArray items;
+                    if(embedded.TryGetValue("items", out items))
+                    {
+                        /* make clone of array */
+                        foreach(IValue itemiv in new AnArray(items))
+                        {
+                            var itemdata = itemiv as Map;
+                            if(itemdata == null)
+                            {
+                                continue;
+                            }
+                            try
+                            {
+                                InventoryItem item = itemdata.ItemFromAisV3(req.Agent, toParentFolderId, req.FullPrefixUrl);
+                                req.InventoryService.Item.Add(item);
+                                created_items.Add(item.ID);
+                            }
+                            catch
+                            {
+                                items.Remove(itemiv);
+                            }
+                        }
+                    }
+                    AnArray links;
+                    if(embedded.TryGetValue("links", out links))
+                    {
+                        foreach (IValue linkiv in links)
+                        {
+                            var linkdata = linkiv as Map;
+                            if (linkdata == null)
+                            {
+                                continue;
+                            }
+                            try
+                            {
+                                InventoryItem link = linkdata.ItemFromAisV3(req.Agent, toParentFolderId, req.FullPrefixUrl);
+                                req.InventoryService.Item.Add(link);
+                                created_items.Add(link.ID);
+                            }
+                            catch
+                            {
+                                items.Remove(linkiv);
+                            }
+                        }
+                    }
+                    AnArray categories;
+                    if(embedded.TryGetValue("categories", out categories))
+                    {
+                        /* clone array here for enum */
+                        foreach (IValue categoryiv in new AnArray(categories))
+                        {
+                            var categorydata = categoryiv as Map;
+                            if (categorydata == null)
+                            {
+                                continue;
+                            }
+                            try
+                            {
+                                InventoryFolder newfolder = categorydata.CategoryFromAisV3(req.Agent, toParentFolderId, req.FullPrefixUrl);
+                                req.InventoryService.Folder.Add(newfolder);
+                                created_categories.Add(newfolder.ID);
+                                stack.Add(categorydata);
+                            }
+                            catch
+                            {
+                                categories.Remove(categoryiv);
+                            }
+                        }
+                    }
                 }
             }
-            var linkeditems = new Dictionary<UUID, InventoryItem>();
-            foreach (InventoryItem item in
-                from linkeditem in req.InventoryService.Item[req.Agent.ID, dedup_linked_ids] select linkeditem)
-            {
-                linkeditems.Add(item.ID, item);
-                rescreateditems.Add(item.ID);
-            }
 
-            foreach (InventoryItem item in itemlinks)
-            {
-                InventoryItem linkeditem;
-                if (linkeditems.TryGetValue(item.AssetID, out linkeditem))
-                {
-                    item.InventoryType = linkeditem.InventoryType;
-                    items.Add(item);
-                    rescreateditems.Add(item.ID);
-                }
-            }
-
-            try
-            {
-                foreach (InventoryFolder folderentry in folders)
-                {
-                    req.InventoryService.Folder.Add(folderentry);
-                }
-            }
-            catch
-            {
-                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
-                return;
-            }
-            try
-            {
-                foreach (InventoryItem item in items)
-                {
-                    req.InventoryService.Item.Add(item);
-                }
-            }
-            catch
-            {
-                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
-                return;
-            }
-
-            var resmap = new Map();
-            var resarray = new AnArray();
-            foreach (InventoryFolder folderentry in folders)
-            {
-                resarray.Add(folderentry.ID);
-            }
-            resmap.Add("_created_categories", resarray);
-            resmap.Add("_created_items", rescreateditems);
-            SuccessResponse(req, resmap);
+            SuccessResponse(req, HttpStatusCode.Created, resdata);
         }
     }
 }

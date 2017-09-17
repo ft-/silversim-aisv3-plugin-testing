@@ -62,7 +62,7 @@ namespace SilverSim.AISv3.Server
         {
             UUID itemid;
 
-            if (!UUID.TryParse(elements[4], out itemid))
+            if (!UUID.TryParse(elements[1], out itemid))
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
@@ -120,7 +120,7 @@ namespace SilverSim.AISv3.Server
 
             UUID itemid;
 
-            if (!UUID.TryParse(elements[4], out itemid))
+            if (!UUID.TryParse(elements[1], out itemid))
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
@@ -264,7 +264,7 @@ namespace SilverSim.AISv3.Server
         {
             UUID itemid;
 
-            if (!UUID.TryParse(elements[4], out itemid))
+            if (!UUID.TryParse(elements[1], out itemid))
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;
@@ -331,7 +331,7 @@ namespace SilverSim.AISv3.Server
         {
             UUID itemid;
 
-            if (!UUID.TryParse(elements[4], out itemid))
+            if (!UUID.TryParse(elements[1], out itemid))
             {
                 ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
                 return;

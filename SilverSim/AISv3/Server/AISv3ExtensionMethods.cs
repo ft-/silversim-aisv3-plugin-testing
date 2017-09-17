@@ -22,8 +22,6 @@
 using SilverSim.Types;
 using SilverSim.Types.Asset;
 using SilverSim.Types.Inventory;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace SilverSim.AISv3.Server
 {
@@ -50,101 +48,6 @@ namespace SilverSim.AISv3.Server
                 }
             }
         };
-
-        public static List<InventoryItem>ItemsFromAisV3(this AnArray items_array, UUI agent, UUID parentFolderId)
-        {
-            var items = new List<InventoryItem>();
-            foreach (Map item_map in items_array.GetValues<Map>())
-            {
-                var item = new InventoryItem()
-                {
-                    Owner = agent,
-                    Creator = agent,
-                    ParentFolderID = parentFolderId,
-                    CreationDate = Date.Now,
-                    AssetID = item_map["asset_id"].AsUUID,
-                    InventoryType = (InventoryType)item_map["inv_type"].AsInt,
-                    Name = item_map["name"].ToString()
-                };
-                Integer intval;
-                Map sale_info;
-                if (item_map.TryGetValue("sale_info", out sale_info))
-                {
-                    if (sale_info.TryGetValue("sale_price", out intval))
-                    {
-                        item.SaleInfo.Price = intval;
-                    }
-                    if (sale_info.TryGetValue("sale_type", out intval))
-                    {
-                        item.SaleInfo.Type = (InventoryItem.SaleInfoData.SaleType)intval.AsInt;
-                    }
-                }
-                if (item_map.TryGetValue("flags", out intval))
-                {
-                    item.Flags = (InventoryFlags)intval.AsInt;
-                }
-                IValue desc;
-                if (item_map.TryGetValue("desc", out desc))
-                {
-                    item.Description = desc.ToString();
-                }
-                item.AssetType = (AssetType)item_map["type"].AsInt;
-                Map perm_info;
-                if (item_map.TryGetValue("permissions", out perm_info))
-                {
-                    if (perm_info.TryGetValue("owner_mask", out intval))
-                    {
-                        item.Permissions.NextOwner = (InventoryPermissionsMask)intval.AsInt;
-                    }
-                    if (perm_info.TryGetValue("base_mask", out intval))
-                    {
-                        item.Permissions.Base = (InventoryPermissionsMask)intval.AsInt;
-                    }
-                    if (perm_info.TryGetValue("next_owner_mask", out intval))
-                    {
-                        item.Permissions.NextOwner = (InventoryPermissionsMask)intval.AsInt;
-                    }
-                    if (perm_info.TryGetValue("group_mask", out intval))
-                    {
-                        item.Permissions.Group = (InventoryPermissionsMask)intval.AsInt;
-                    }
-                    if (perm_info.TryGetValue("everyone_mask", out intval))
-                    {
-                        item.Permissions.EveryOne = (InventoryPermissionsMask)intval.AsInt;
-                    }
-                }
-                items.Add(item);
-            }
-            return items;
-        }
-
-        public static List<InventoryItem> LinksFromAisV3(this AnArray items_array, UUI agent, UUID parentFolderId)
-        {
-            var items = new List<InventoryItem>();
-            foreach (Map item_map in items_array.GetValues<Map>())
-            {
-                var item = new InventoryItem()
-                {
-                    Owner = agent,
-                    Creator = agent,
-                    ParentFolderID = parentFolderId,
-                    CreationDate = Date.Now,
-                    AssetID = item_map["linked_id"].AsUUID,
-                    AssetType = (AssetType)item_map["type"].AsInt
-                };
-                IValue iv;
-                if(item_map.TryGetValue("name", out iv))
-                {
-                    item.Name = iv.ToString();
-                }
-                if(item_map.TryGetValue("desc", out iv))
-                {
-                    item.Description = iv.ToString();
-                }
-                items.Add(item);
-            }
-            return items;
-        }
 
         public static Map ToAisV3(this InventoryItem item, string fullprefixuri)
         {
@@ -185,61 +88,117 @@ namespace SilverSim.AISv3.Server
             return resmap;
         }
 
-        public static void CategoriesFromAisV3(this AnArray categories_map, UUI agent, UUID toParentFolderId, List<InventoryFolder> folders, List<InventoryItem> items, List<InventoryItem> itemlinks)
+        public static InventoryItem ItemFromAisV3(this Map item_map, UUI agent, UUID toParentFolderId, string fullprefixuri)
         {
-            foreach(Map m in categories_map.GetValues<Map>())
+            var item = new InventoryItem(UUID.Random)
             {
-                m.CategoryFromAisV3(agent, toParentFolderId, folders, items, itemlinks);
+                Owner = agent,
+                Creator = agent,
+                ParentFolderID = toParentFolderId,
+                CreationDate = Date.Now,
+                InventoryType = (InventoryType)item_map["inv_type"].AsInt,
+                Name = item_map["name"].ToString()
+            };
+            UUID id;
+            if(item_map.TryGetValue("asset_id", out id))
+            {
+                item.AssetID = id;
             }
+            else if(item_map.TryGetValue("linked_id", out id))
+            {
+                item.AssetID = id;
+            }
+            Integer intval;
+            Map sale_info;
+            if (item_map.TryGetValue("sale_info", out sale_info))
+            {
+                if (sale_info.TryGetValue("sale_price", out intval))
+                {
+                    item.SaleInfo.Price = intval;
+                }
+                if (sale_info.TryGetValue("sale_type", out intval))
+                {
+                    item.SaleInfo.Type = (InventoryItem.SaleInfoData.SaleType)intval.AsInt;
+                }
+            }
+            if (item_map.TryGetValue("flags", out intval))
+            {
+                item.Flags = (InventoryFlags)intval.AsInt;
+            }
+            IValue desc;
+            if (item_map.TryGetValue("desc", out desc))
+            {
+                item.Description = desc.ToString();
+            }
+            item.AssetType = (AssetType)item_map["type"].AsInt;
+            Map perm_info;
+            if (item_map.TryGetValue("permissions", out perm_info))
+            {
+                if (perm_info.TryGetValue("owner_mask", out intval))
+                {
+                    item.Permissions.NextOwner = (InventoryPermissionsMask)intval.AsInt;
+                }
+                if (perm_info.TryGetValue("base_mask", out intval))
+                {
+                    item.Permissions.Base = (InventoryPermissionsMask)intval.AsInt;
+                }
+                if (perm_info.TryGetValue("next_owner_mask", out intval))
+                {
+                    item.Permissions.NextOwner = (InventoryPermissionsMask)intval.AsInt;
+                }
+                if (perm_info.TryGetValue("group_mask", out intval))
+                {
+                    item.Permissions.Group = (InventoryPermissionsMask)intval.AsInt;
+                }
+                if (perm_info.TryGetValue("everyone_mask", out intval))
+                {
+                    item.Permissions.EveryOne = (InventoryPermissionsMask)intval.AsInt;
+                }
+            }
+
+            var linkref = new Map
+            {
+                { "self", ToAisV3Href(fullprefixuri + "/item/" + item.ID.ToString()) },
+                { "parent", ToAisV3Href(fullprefixuri + "/category/" + item.ParentFolderID.ToString()) }
+            };
+            if(item.AssetType == AssetType.Link)
+            {
+                linkref.Add("item", ToAisV3Href(fullprefixuri + "/item/" + item.ID.ToString()));
+            }
+            else if(item.AssetType == AssetType.LinkFolder)
+            {
+                linkref.Add("category", ToAisV3Href(fullprefixuri + "/category/" + item.ID.ToString()));
+            }
+            item_map.Add("_links", linkref);
+
+            return item;
         }
 
-        public static void CategoryFromAisV3(this Map category, UUI agent, UUID toParentFolderId, List<InventoryFolder> folders, List<InventoryItem> items, List<InventoryItem> itemlinks)
+        public static InventoryFolder CategoryFromAisV3(this Map category_map, UUI agent, UUID toParentFolderId, string fullprefixuri)
         {
-            /* we use a stack based algo here instead of recursive (ParentFolderID, Category_Map) */
-            var folders_stack = new List<KeyValuePair<UUID, Map>>();
-            folders_stack.Add(new KeyValuePair<UUID, Map>(toParentFolderId, category));
-
-            while(folders_stack.Count != 0)
+            var folder = new InventoryFolder(UUID.Random);
+            Integer intval;
+            folder.Name = category_map["name"].ToString();
+            if (category_map.TryGetValue("type_default", out intval))
             {
-                KeyValuePair<UUID, Map> kvp = folders_stack[0];
-                folders_stack.RemoveAt(0);
-                var folder = new InventoryFolder();
-                folder.ParentFolderID = kvp.Key;
-                folder.Owner = agent;
-                folder.InventoryType = InventoryType.Unknown;
-                Map category_map = kvp.Value;
-                folder.Name = category_map["name"].ToString();
-                Integer intval;
-                if (category_map.TryGetValue("type_default", out intval))
-                {
-                    folder.InventoryType = (InventoryType)intval.AsInt;
-                }
-                folder.Version = 1;
-                Map emb_map;
-                if (category_map.TryGetValue("_embedded", out emb_map))
-                {
-                    AnArray array;
-                    if (category_map.TryGetValue("items", out array))
-                    {
-                        items.AddRange(array.ItemsFromAisV3(agent, folder.ID));
-                    }
-
-                    if (category_map.TryGetValue("links", out array))
-                    {
-                        List<InventoryItem> links = array.LinksFromAisV3(agent, folder.ID);
-                        items.AddRange(from link in links where link.AssetType == AssetType.LinkFolder select link);
-                        itemlinks.AddRange(from link in links where link.AssetType == AssetType.Link select link);
-                    }
-
-                    if(category_map.TryGetValue("categories", out array))
-                    {
-                        foreach(Map m in array.GetValues<Map>())
-                        {
-                            folders_stack.Add(new KeyValuePair<UUID, Map>(folder.ID, m));
-                        }
-                    }
-                }
+                folder.InventoryType = (InventoryType)intval.AsInt;
             }
+            folder.Owner = agent;
+            folder.ParentFolderID = toParentFolderId;
+            folder.Version = 1;
+            var linkref = new Map
+            {
+                { "self", ToAisV3Href(fullprefixuri + "/item/" + folder.ID.ToString()) },
+                { "parent", ToAisV3Href(fullprefixuri + "/category/" + folder.ParentFolderID.ToString()) },
+                { "links", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString() + "/links") },
+                { "items", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString() + "/items") },
+                { "children", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString() + "/children") }
+            };
+            category_map.Add("_links", linkref);
+            category_map.Add("category_id", folder.ID);
+            category_map.Add("parent_id", folder.ParentFolderID);
+            category_map.Add("agent_id", folder.Owner.ID);
+            return folder;
         }
     }
 }

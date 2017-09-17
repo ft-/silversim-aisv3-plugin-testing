@@ -28,7 +28,6 @@ using SilverSim.Types.StructuredData.Llsd;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 
 namespace SilverSim.AISv3.Server
@@ -81,33 +80,35 @@ namespace SilverSim.AISv3.Server
 
         private static void SuccessResponse(Request req, Map m)
         {
+            byte[] buffer;
             using (var ms = new MemoryStream())
             {
                 LlsdXml.Serialize(m, ms);
-                byte[] buffer = ms.ToArray();
-                using (HttpResponse res = req.HttpRequest.BeginResponse("application/llsd+xml"))
+                buffer = ms.ToArray();
+            }
+            using (HttpResponse res = req.HttpRequest.BeginResponse("application/llsd+xml"))
+            {
+                using (Stream o = res.GetOutputStream(buffer.Length))
                 {
-                    using (Stream o = res.GetOutputStream(buffer.Length))
-                    {
-                        o.Write(buffer, 0, (int)buffer.Length);
-                    }
+                    o.Write(buffer, 0, buffer.Length);
                 }
             }
         }
 
         private static void SuccessResponse(Request req, HttpStatusCode statuscode, Map m)
         {
+            byte[] buffer;
             using (var ms = new MemoryStream())
             {
                 LlsdXml.Serialize(m, ms);
-                byte[] buffer = ms.ToArray();
-                using (HttpResponse res = req.HttpRequest.BeginResponse(statuscode, statuscode.ToString()))
+                buffer = ms.ToArray();
+            }
+            using (HttpResponse res = req.HttpRequest.BeginResponse(statuscode, statuscode.ToString()))
+            {
+                res.ContentType = "application/llsd+xml";
+                using (Stream o = res.GetOutputStream(buffer.Length))
                 {
-                    res.ContentType = "application/llsd+xml";
-                    using (Stream o = res.GetOutputStream(buffer.Length))
-                    {
-                        o.Write(buffer, 0, (int)buffer.Length);
-                    }
+                    o.Write(buffer, 0, (int)buffer.Length);
                 }
             }
         }
@@ -125,15 +126,17 @@ namespace SilverSim.AISv3.Server
         private static void ErrorResponse(Request req, HttpStatusCode code, AisErrorCode errorcode, string description, Map m)
         {
             m.Add("error_code", (int)errorcode);
+            byte[] resdata;
             using (var ms = new MemoryStream())
             {
                 LlsdXml.Serialize(m, ms);
-                using (HttpResponse res = req.HttpRequest.BeginResponse(code, description, "application/llsd+xml"))
+                resdata = ms.ToArray();
+            }
+            using (HttpResponse res = req.HttpRequest.BeginResponse(code, description, "application/llsd+xml"))
+            {
+                using (Stream o = res.GetOutputStream(resdata.Length))
                 {
-                    using (Stream o = res.GetOutputStream(ms.Length))
-                    {
-                        o.Write(ms.ToArray(), 0, (int)ms.Length);
-                    }
+                    o.Write(resdata, 0, (int)resdata.Length);
                 }
             }
         }
@@ -257,12 +260,16 @@ namespace SilverSim.AISv3.Server
                 }
             }
 
-            switch(elements[3])
+            switch(elements[0])
             {
                 case "item":
                     try
                     {
                         ItemHandler(req, elements);
+                    }
+                    catch (HttpResponse.ConnectionCloseException)
+                    {
+                        /* ignore */
                     }
                     catch
                     {
@@ -274,6 +281,10 @@ namespace SilverSim.AISv3.Server
                     try
                     {
                         FolderHandler(req, elements);
+                    }
+                    catch(HttpResponse.ConnectionCloseException)
+                    {
+                        /* ignore */
                     }
                     catch
                     {
@@ -300,6 +311,13 @@ namespace SilverSim.AISv3.Server
 
                 case "bodypart":
                     if (!req.InventoryService.Folder.TryGetValue(req.Agent.ID, AssetType.Bodypart, out folder))
+                    {
+                        return false;
+                    }
+                    break;
+
+                case "callcard":
+                    if (!req.InventoryService.Folder.TryGetValue(req.Agent.ID, AssetType.CallingCard, out folder))
                     {
                         return false;
                     }
@@ -448,7 +466,7 @@ namespace SilverSim.AISv3.Server
             if (splitquery.Length < 2)
             {
                 options = new string[0];
-                return false;
+                return true;
             }
 
             if(splitquery.Length > 1)
