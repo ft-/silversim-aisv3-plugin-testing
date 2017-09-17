@@ -20,6 +20,7 @@
 // exception statement from your version.
 
 using SilverSim.Main.Common.HttpServer;
+using SilverSim.ServiceInterfaces.Inventory;
 using SilverSim.Types;
 using SilverSim.Types.Asset;
 using SilverSim.Types.Inventory;
@@ -398,6 +399,16 @@ namespace SilverSim.AISv3.Server
             try
             {
                 req.InventoryService.Item.Move(req.Agent.ID, itemid, destFolder.ID);
+            }
+            catch (InventoryItemNotFoundException)
+            {
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source item gone");
+                return;
+            }
+            catch (InvalidParentFolderIdException)
+            {
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                return;
             }
             catch
             {

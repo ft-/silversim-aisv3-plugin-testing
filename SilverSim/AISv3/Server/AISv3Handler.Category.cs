@@ -20,6 +20,7 @@
 // exception statement from your version.
 
 using SilverSim.Main.Common.HttpServer;
+using SilverSim.ServiceInterfaces.Inventory;
 using SilverSim.Types;
 using SilverSim.Types.Asset;
 using SilverSim.Types.Inventory;
@@ -233,6 +234,16 @@ namespace SilverSim.AISv3.Server
             {
                 req.InventoryService.Folder.Move(req.Agent.ID, folderid, destFolder.ID);
             }
+            catch(InventoryFolderNotFoundException)
+            {
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source item gone");
+                return;
+            }
+            catch(InvalidParentFolderIdException)
+            {
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                return;
+            }
             catch
             {
                 ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.QueryFailed, "Forbidden");
@@ -276,7 +287,7 @@ namespace SilverSim.AISv3.Server
             var folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                if (!TryFindFolder(req, elements[4], out folder, folderCache))
+                if (!TryFindFolder(req, elements[1], out folder, folderCache))
                 {
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;
@@ -312,7 +323,7 @@ namespace SilverSim.AISv3.Server
             var folderCache = new Dictionary<UUID, InventoryFolder>();
             try
             {
-                if (!TryFindFolder(req, elements[4], out folder, folderCache))
+                if (!TryFindFolder(req, elements[1], out folder, folderCache))
                 {
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;

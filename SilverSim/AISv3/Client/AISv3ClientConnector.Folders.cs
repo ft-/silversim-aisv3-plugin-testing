@@ -350,7 +350,24 @@ namespace SilverSim.AISv3.Client
             {
                 ["Destination"] = $"{m_CapabilityUri}category/{toFolderID}"
             };
-            HttpClient.DoRequest("MOVE", $"{m_CapabilityUri}category/{folderID}", null, string.Empty, string.Empty, false, TimeoutMs, headers);
+            try
+            {
+                HttpClient.DoRequest("MOVE", $"{m_CapabilityUri}category/{folderID}", null, string.Empty, string.Empty, false, TimeoutMs, headers);
+            }
+            catch (HttpException e)
+            {
+                switch (e.GetHttpCode())
+                {
+                    case 404:
+                        throw new InvalidParentFolderIdException();
+
+                    case 410:
+                        throw new InventoryFolderNotFoundException(folderID);
+
+                    default:
+                        throw;
+                }
+            }
         }
 
         void IInventoryFolderServiceInterface.Purge(UUID folderID)

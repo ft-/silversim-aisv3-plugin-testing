@@ -71,6 +71,25 @@ namespace SilverSim.AISv3.Server
             resmap.Add("item_id", item.ID);
             resmap.Add("type", (int)item.AssetType);
             resmap.Add("desc", item.Description);
+            var saleinfo = new Map
+            {
+                { "sale_price", item.SaleInfo.Price },
+                { "sale_type", (int)item.SaleInfo.Type }
+            };
+            resmap.Add("sale_info", saleinfo);
+            var perminfo = new Map
+            {
+                { "base_mask", (int)item.Permissions.Base },
+                { "group_mask", (int)item.Permissions.Group },
+                { "last_owner_id", item.LastOwner.ID },
+                { "owner_id", item.Owner.ID },
+                { "owner_mask", (int)item.Permissions.Current },
+                { "creator_id", item.Creator.ID },
+                { "next_owner_mask", (int)item.Permissions.NextOwner },
+                { "group_id", item.Group.ID },
+                { "everyone_mask", (int)item.Permissions.EveryOne }
+            };
+            resmap.Add("permissions", perminfo);
             var linkref = new Map
             {
                 { "self", ToAisV3Href(fullprefixuri + "/item/" + item.ID.ToString()) },
