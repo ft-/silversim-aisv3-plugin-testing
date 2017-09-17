@@ -282,6 +282,11 @@ namespace SilverSim.AISv3.Server
                     return;
                 }
             }
+            catch (HttpResponse.ConnectionCloseException)
+            {
+                /* we need to pass it */
+                throw;
+            }
             catch (Exception)
             {
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
@@ -312,6 +317,11 @@ namespace SilverSim.AISv3.Server
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;
                 }
+            }
+            catch (HttpResponse.ConnectionCloseException)
+            {
+                /* we need to pass it */
+                throw;
             }
             catch (Exception)
             {

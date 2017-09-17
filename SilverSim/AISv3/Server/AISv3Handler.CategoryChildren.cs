@@ -19,6 +19,7 @@
 // obligated to do so. If you do not wish to do so, delete this
 // exception statement from your version.
 
+using SilverSim.Main.Common.HttpServer;
 using SilverSim.Types;
 using SilverSim.Types.Inventory;
 using System;
@@ -58,6 +59,11 @@ namespace SilverSim.AISv3.Server
                     ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                     return;
                 }
+            }
+            catch (HttpResponse.ConnectionCloseException)
+            {
+                /* we need to pass it */
+                throw;
             }
             catch (Exception)
             {
