@@ -297,7 +297,7 @@ namespace SilverSim.AISv3.Client
                         }
                     },
                     {
-                        "permisssions", new Map
+                        "permissions", new Map
                         {
                             { "owner_mask", (int)item.Permissions.Current },
                             { "everyone_mask", (int)item.Permissions.EveryOne },

@@ -244,6 +244,7 @@ namespace SilverSim.AISv3.Client
                         ParentFolderID = itemdata["parent_id"].AsUUID,
                         Flags = (InventoryFlags)itemdata["flags"].AsInt,
                         Owner = new UUI(perminfo["owner_id"].AsUUID),
+                        Creator = new UUI(perminfo["creator_id"].AsUUID),
                         LastOwner = new UUI(perminfo["last_owner_id"].AsUUID),
                         Group = new UGI(perminfo["group_id"].AsUUID),
                         Permissions = new InventoryPermissionsData
