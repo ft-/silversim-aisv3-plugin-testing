@@ -335,7 +335,23 @@ namespace SilverSim.AISv3.Server
                 ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.QueryFailed, "Forbidden");
                 return;
             }
-            SuccessResponse(req);
+
+            var updatedcategoryversions = new Map();
+            InventoryFolder oldLocationFolder;
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, destFolder.ID, out oldLocationFolder))
+            {
+                updatedcategoryversions.Add(oldLocationFolder.ID.ToString(), oldLocationFolder.Version);
+            }
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, destFolder.ID, out destFolder))
+            {
+                updatedcategoryversions.Add(destFolder.ID.ToString(), destFolder.Version);
+            }
+            item.ParentFolderID = destFolder.ID;
+            Map resdata = item.ToAisV3(req.FullPrefixUrl);
+            resdata.Add("_updated_items", new AnArray { item.ID });
+            resdata.Add("_updated_category_versions", updatedcategoryversions);
+
+            SuccessResponse(req, resdata);
         }
 
         private static void ItemHandler_Move(Request req, string[] elements)
@@ -415,7 +431,22 @@ namespace SilverSim.AISv3.Server
                 ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.QueryFailed, "Forbidden");
                 return;
             }
-            SuccessResponse(req);
+
+            var updatedcategoryversions = new Map();
+            InventoryFolder oldLocationFolder;
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, item.ParentFolderID, out oldLocationFolder))
+            {
+                updatedcategoryversions.Add(oldLocationFolder.ID.ToString(), oldLocationFolder.Version);
+            }
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, destFolder.ID, out destFolder))
+            {
+                updatedcategoryversions.Add(destFolder.ID.ToString(), destFolder.Version);
+            }
+            item.ParentFolderID = destFolder.ID;
+            Map resdata = item.ToAisV3(req.FullPrefixUrl);
+            resdata.Add("_updated_items", new AnArray { item.ID });
+            resdata.Add("_updated_category_versions", updatedcategoryversions);
+            SuccessResponse(req, resdata);
         }
 
         private static void ItemHandler_Delete(Request req, string[] elements)

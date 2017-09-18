@@ -250,7 +250,22 @@ namespace SilverSim.AISv3.Server
                 ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.QueryFailed, "Forbidden");
                 return;
             }
-            SuccessResponse(req);
+
+            var updatedcategoryversions = new Map();
+            InventoryFolder oldLocationFolder;
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, folderToMove.ParentFolderID, out oldLocationFolder))
+            {
+                updatedcategoryversions.Add(oldLocationFolder.ID.ToString(), oldLocationFolder.Version);
+            }
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, destFolder.ID, out destFolder))
+            {
+                updatedcategoryversions.Add(destFolder.ID.ToString(), destFolder.Version);
+            }
+            folderToMove.ParentFolderID = destFolder.ID;
+            Map resdata = folderToMove.ToAisV3(req.FullPrefixUrl);
+            resdata.Add("_updated_categories", new AnArray { folderToMove.ID });
+            resdata.Add("_updated_category_versions", updatedcategoryversions);
+            SuccessResponse(req, resdata);
         }
 
         private static void FolderHandler_Patch(Request req, string[] elements)
@@ -320,7 +335,7 @@ namespace SilverSim.AISv3.Server
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
-            SuccessResponse(req);
+            SuccessResponse(req, folder.ToAisV3(req.FullPrefixUrl));
         }
 
         private static void FolderHandler_Delete(Request req, string[] elements)
@@ -346,16 +361,15 @@ namespace SilverSim.AISv3.Server
                 return;
             }
 
-            try
-            {
-                req.InventoryService.Folder.Delete(req.Agent.ID, folder.ID);
-            }
-            catch (KeyNotFoundException)
+            if(!req.InventoryService.Folder.ContainsKey(req.Agent.ID, folder.ID))
             {
                 ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Category gone");
                 return;
             }
-            SuccessResponse(req);
+
+            var result = new AISv3ResultData();
+            DeleteFolder(req, folder.ID, result);
+            SuccessResponse(req, result);
         }
         #endregion
     }
