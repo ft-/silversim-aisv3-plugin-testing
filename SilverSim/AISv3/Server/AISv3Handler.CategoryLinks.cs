@@ -97,7 +97,7 @@ namespace SilverSim.AISv3.Server
                     if (item.AssetType == AssetType.Link)
                     {
                         InventoryItem linkeditem;
-                        if(req.InventoryService.Item.TryGetValue(item.AssetID, out linkeditem))
+                        if(req.InventoryService.Item.TryGetValue(req.Agent.ID, item.AssetID, out linkeditem))
                         {
                             Map linkeditemdata = linkeditem.ToAisV3(req.FullPrefixUrl);
                             linkembedded.Add("item", linkeditemdata);
@@ -203,7 +203,7 @@ namespace SilverSim.AISv3.Server
                 InventoryItem linkeditem;
                 InventoryFolder linkedfolder;
                 Map itemdata;
-                if(item.AssetType == AssetType.Link && req.InventoryService.Item.TryGetValue(item.AssetID, out linkeditem))
+                if(item.AssetType == AssetType.Link && req.InventoryService.Item.TryGetValue(req.Agent.ID, item.AssetID, out linkeditem))
                 {
                     item.InventoryType = linkeditem.InventoryType;
                     itemdata = item.ToAisV3(req.FullPrefixUrl);

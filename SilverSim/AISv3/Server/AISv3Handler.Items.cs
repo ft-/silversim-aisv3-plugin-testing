@@ -88,7 +88,7 @@ namespace SilverSim.AISv3.Server
                 resmap = item.ToAisV3(req.FullPrefixUrl);
                 resmap.Add("_base_uri", req.FullPrefixUrl + "/item/" + itemid.ToString());
                 InventoryItem linkeditem;
-                if (req.InventoryService.Item.TryGetValue(item.AssetID, out linkeditem))
+                if (req.InventoryService.Item.TryGetValue(req.Agent.ID, item.AssetID, out linkeditem))
                 {
                     var embmap = new Map();
                     resmap.Add("_embedded", embmap);
@@ -147,7 +147,7 @@ namespace SilverSim.AISv3.Server
             }
 
             InventoryItem item;
-            if(!req.InventoryService.Item.TryGetValue(itemid, out item))
+            if(!req.InventoryService.Item.TryGetValue(req.Agent.ID, itemid, out item))
             {
                 ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Not Found");
                 return;
@@ -239,7 +239,7 @@ namespace SilverSim.AISv3.Server
             }
             InventoryItem linkeditem;
             InventoryFolder linkedfolder;
-            if (item.AssetType == AssetType.Link && req.InventoryService.Item.TryGetValue(item.AssetID, out linkeditem))
+            if (item.AssetType == AssetType.Link && req.InventoryService.Item.TryGetValue(req.Agent.ID, item.AssetID, out linkeditem))
             {
                 Map itemdata = linkeditem.ToAisV3(req.FullPrefixUrl);
                 var embedded = new Map
