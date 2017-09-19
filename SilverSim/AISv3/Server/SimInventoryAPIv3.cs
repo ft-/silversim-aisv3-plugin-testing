@@ -22,11 +22,13 @@
 using SilverSim.Main.Common;
 using SilverSim.Main.Common.HttpServer;
 using SilverSim.Viewer.Core;
+using System.ComponentModel;
 using System.Net;
 
 namespace SilverSim.AISv3.Server
 {
     [PluginName("SimInventoryAPIv3")]
+    [Description("AISv3 user inventory support")]
     public sealed class SimInventoryAPIv3 : ICapabilityExtender, IPlugin
     {
         private const string PrefixCapsUrl = "/CAPS/InventoryAPIv3/00000000-0000-0000-0000-000000000000";
