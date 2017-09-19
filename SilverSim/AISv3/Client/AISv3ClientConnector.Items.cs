@@ -29,6 +29,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Web;
 
+/* initially disabling Obsolete here */
+#pragma warning disable CS0618
+
 namespace SilverSim.AISv3.Client
 {
     public partial class AISv3ClientConnector : IInventoryItemServiceInterface
