@@ -216,7 +216,24 @@ namespace SilverSim.AISv3.Client
 
         void IInventoryItemServiceInterface.Copy(UUID principalID, UUID id, UUID newFolder)
         {
-            CopyItem(principalID, id, newFolder);
+            var headers = new Dictionary<string, string>
+            {
+                ["Destination"] = $"{m_CapabilityUri}category/{newFolder}"
+            };
+            try
+            {
+                HttpClient.DoRequest("COPY", $"{m_CapabilityUri}item/{id}", null, string.Empty, string.Empty, false, TimeoutMs, headers);
+            }
+            catch (HttpException e)
+            {
+                switch (e.GetHttpCode())
+                {
+                    case 403: throw new InventoryItemNotCopiableException(id);
+                    case 404: throw new InvalidParentFolderIdException();
+                    case 410: throw new InventoryItemNotFoundException(id);
+                    default: throw;
+                }
+            }
         }
 
         bool IInventoryItemServiceInterface.TryGetValue(UUID key, out InventoryItem item)
