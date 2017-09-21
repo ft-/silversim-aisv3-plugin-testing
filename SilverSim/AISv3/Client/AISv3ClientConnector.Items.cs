@@ -214,6 +214,11 @@ namespace SilverSim.AISv3.Client
             }
         }
 
+        void IInventoryItemServiceInterface.Copy(UUID principalID, UUID id, UUID newFolder)
+        {
+            CopyItem(principalID, id, newFolder);
+        }
+
         bool IInventoryItemServiceInterface.TryGetValue(UUID key, out InventoryItem item)
         {
             item = default(InventoryItem);
