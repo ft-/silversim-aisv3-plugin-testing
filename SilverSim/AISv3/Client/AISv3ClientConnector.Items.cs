@@ -214,15 +214,19 @@ namespace SilverSim.AISv3.Client
             }
         }
 
-        void IInventoryItemServiceInterface.Copy(UUID principalID, UUID id, UUID newFolder)
+        UUID IInventoryItemServiceInterface.Copy(UUID principalID, UUID id, UUID newFolder)
         {
             var headers = new Dictionary<string, string>
             {
                 ["Destination"] = $"{m_CapabilityUri}category/{newFolder}"
             };
+            Map res;
             try
             {
-                HttpClient.DoRequest("COPY", $"{m_CapabilityUri}item/{id}", null, string.Empty, string.Empty, false, TimeoutMs, headers);
+                using (Stream s = HttpClient.DoStreamRequest("COPY", $"{m_CapabilityUri}item/{id}", null, string.Empty, string.Empty, false, TimeoutMs, headers))
+                {
+                    res = (Map)LlsdXml.Deserialize(s);
+                }
             }
             catch (HttpException e)
             {
@@ -234,6 +238,14 @@ namespace SilverSim.AISv3.Client
                     default: throw;
                 }
             }
+
+            AnArray created_items;
+
+            if (!res.TryGetValue("_created_items", out created_items) || created_items.Count != 1)
+            {
+                throw new InventoryItemNotStoredException();
+            }
+            return created_items[0].AsUUID;
         }
 
         bool IInventoryItemServiceInterface.TryGetValue(UUID key, out InventoryItem item)

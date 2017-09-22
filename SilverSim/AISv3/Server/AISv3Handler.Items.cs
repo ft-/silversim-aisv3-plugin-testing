@@ -326,6 +326,12 @@ namespace SilverSim.AISv3.Server
             item.SetNewID(UUID.Random);
             item.ParentFolderID = destFolder.ID;
 
+            if((item.Permissions.Current & InventoryPermissionsMask.Copy) == 0)
+            {
+                ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.QueryFailed, "Forbidden");
+                return;
+            }
+
             try
             {
                 req.InventoryService.Item.Add(item);
@@ -348,10 +354,10 @@ namespace SilverSim.AISv3.Server
             }
             item.ParentFolderID = destFolder.ID;
             Map resdata = item.ToAisV3(req.FullPrefixUrl);
-            resdata.Add("_updated_items", new AnArray { item.ID });
+            resdata.Add("_created_items", new AnArray { item.ID });
             resdata.Add("_updated_category_versions", updatedcategoryversions);
 
-            SuccessResponse(req, resdata);
+            SuccessResponse(req, HttpStatusCode.Created, resdata);
         }
 
         private static void ItemHandler_Move(Request req, string[] elements)
