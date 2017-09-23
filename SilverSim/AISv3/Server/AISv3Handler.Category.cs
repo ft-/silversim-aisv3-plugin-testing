@@ -256,8 +256,10 @@ namespace SilverSim.AISv3.Server
             resdata.Add("_created_categories", created_categories);
             resdata.Add("_created_items", created_items);
             resdata.Add("_updated_category_versions", updatedcategoryversions);
-            var stack = new List<KeyValuePair<Map, InventoryTree>>();
-            stack.Add(new KeyValuePair<Map, InventoryTree>(resdata, tree));
+            var stack = new List<KeyValuePair<Map, InventoryTree>>
+            {
+                new KeyValuePair<Map, InventoryTree>(resdata, tree)
+            };
             created_categories.Add(tree.ID);
             while(stack.Count > 0)
             {
@@ -300,7 +302,6 @@ namespace SilverSim.AISv3.Server
                 updatedcategoryversions.Add(destFolder.ID.ToString(), destFolder.Version);
             }
             SuccessResponse(req, HttpStatusCode.Created, resdata);
-
         }
 
         private static void FolderHandler_Move(Request req, string[] elements)
