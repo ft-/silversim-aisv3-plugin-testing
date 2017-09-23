@@ -82,6 +82,10 @@ namespace SilverSim.AISv3.Server
                     FolderHandler_Move(req, elements);
                     break;
 
+                case "COPY":
+                    FolderHandler_Copy(req, elements);
+                    break;
+
                 case "DELETE":
                     FolderHandler_Delete(req, elements);
                     break;
@@ -173,6 +177,132 @@ namespace SilverSim.AISv3.Server
             SuccessResponse(req, resdata);
         }
 
+        private static void FolderHandler_Copy(Request req, string[] elements)
+        {
+            UUID folderid;
+
+            if (!UUID.TryParse(elements[1], out folderid))
+            {
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
+                return;
+            }
+
+            string destinationurl = req.HttpRequest["Destination"];
+            if (!destinationurl.StartsWith(req.FullPrefixUrl))
+            {
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                return;
+            }
+            destinationurl = destinationurl.Substring(req.FullPrefixUrl.Length);
+            string[] destelements;
+            string[] destoptions;
+            if (!TrySplitURL(destinationurl, out destelements, out destoptions))
+            {
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
+                return;
+            }
+
+            if (destelements[0] != "category")
+            {
+                ErrorResponse(req, HttpStatusCode.BadRequest, AisErrorCode.InvalidRequest, "Bad request");
+                return;
+            }
+            InventoryFolder destFolder;
+            var folderCache = new Dictionary<UUID, InventoryFolder>();
+            try
+            {
+                if (!TryFindFolder(req, destelements[1], out destFolder, folderCache))
+                {
+                    ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                    return;
+                }
+            }
+            catch (HttpResponse.ConnectionCloseException)
+            {
+                /* we need to pass it */
+                throw;
+            }
+            catch
+            {
+                ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
+                return;
+            }
+
+            InventoryTree tree;
+            try
+            {
+                tree = req.InventoryService.Folder.Copy(req.Agent.ID, folderid, destFolder.ID);
+            }
+            catch (InventoryFolderNotFoundException)
+            {
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source category gone");
+                return;
+            }
+            catch (InvalidParentFolderIdException)
+            {
+                ErrorResponse(req, HttpStatusCode.NotFound, AisErrorCode.NotFound, "Destination category not found");
+                return;
+            }
+            catch
+            {
+                ErrorResponse(req, HttpStatusCode.Forbidden, AisErrorCode.QueryFailed, "Forbidden");
+                return;
+            }
+
+            Map resdata = tree.ToAisV3(req.FullPrefixUrl);
+            var created_items = new AnArray();
+            var created_categories = new AnArray();
+            var updatedcategoryversions = new Map();
+            resdata.Add("_created_categories", created_categories);
+            resdata.Add("_created_items", created_items);
+            resdata.Add("_updated_category_versions", updatedcategoryversions);
+            var stack = new List<KeyValuePair<Map, InventoryTree>>();
+            stack.Add(new KeyValuePair<Map, InventoryTree>(resdata, tree));
+            created_categories.Add(tree.ID);
+            while(stack.Count > 0)
+            {
+                KeyValuePair<Map, InventoryTree> kvp = stack[0];
+                stack.RemoveAt(0);
+
+                var embeddeditems = new Map();
+                var embeddedlinks = new Map();
+                var embeddedcategories = new Map();
+                var embedded = new Map
+                {
+                    ["items"] = embeddeditems,
+                    ["categories"] = embeddedcategories,
+                    ["links"] = embeddedlinks
+                };
+                kvp.Key.Add("_embedded", embedded);
+                foreach (InventoryItem item in kvp.Value.Items)
+                {
+                    if (item.AssetType == AssetType.Link || item.AssetType == AssetType.LinkFolder)
+                    {
+                        embeddedlinks.Add(item.ID.ToString(), item.ToAisV3(req.FullPrefixUrl));
+                    }
+                    else
+                    {
+                        embeddeditems.Add(item.ID.ToString(), item.ToAisV3(req.FullPrefixUrl));
+                    }
+                    created_items.Add(item.ID);
+                }
+                foreach (InventoryTree folder in kvp.Value.Folders)
+                {
+                    Map folderdata = folder.ToAisV3(req.FullPrefixUrl);
+                    embeddedcategories.Add(folder.ID.ToString(), folderdata);
+                    created_categories.Add(folder.ID);
+                    stack.Add(new KeyValuePair<Map, InventoryTree>(folderdata, folder));
+                }
+
+            }
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, destFolder.ID, out destFolder))
+            {
+                updatedcategoryversions.Add(destFolder.ID.ToString(), destFolder.Version);
+            }
+            SuccessResponse(req, HttpStatusCode.Created, resdata);
+
+        }
+
         private static void FolderHandler_Move(Request req, string[] elements)
         {
             UUID folderid;
@@ -227,7 +357,7 @@ namespace SilverSim.AISv3.Server
             InventoryFolder folderToMove;
             if (!req.InventoryService.Folder.TryGetValue(req.Agent.ID, folderid, out folderToMove))
             {
-                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source item gone");
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source category gone");
                 return;
             }
 
@@ -237,7 +367,7 @@ namespace SilverSim.AISv3.Server
             }
             catch(InventoryFolderNotFoundException)
             {
-                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source item gone");
+                ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Source category gone");
                 return;
             }
             catch(InvalidParentFolderIdException)
