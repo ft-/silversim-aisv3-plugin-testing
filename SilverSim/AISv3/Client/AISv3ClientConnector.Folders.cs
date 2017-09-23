@@ -356,6 +356,85 @@ namespace SilverSim.AISv3.Client
             /* intentionally left empty */
         }
 
+        InventoryTree IInventoryFolderServiceInterface.Copy(UUID principalID, UUID folderID, UUID toFolderID)
+        {
+            var headers = new Dictionary<string, string>
+            {
+                ["Destination"] = $"{m_CapabilityUri}category/{toFolderID}"
+            };
+            Map res;
+            try
+            {
+                using (Stream s = HttpClient.DoStreamRequest("COPY", $"{m_CapabilityUri}category/{folderID}", null, string.Empty, string.Empty, false, TimeoutMs, headers))
+                {
+                    res = (Map)LlsdXml.Deserialize(s);
+                }
+            }
+            catch (HttpException e)
+            {
+                switch (e.GetHttpCode())
+                {
+                    case 404:
+                        throw new InvalidParentFolderIdException();
+
+                    case 403:
+                        throw new InventoryItemNotCopiableException();
+
+                    case 410:
+                        throw new InventoryFolderNotFoundException(folderID);
+
+                    default:
+                        throw;
+                }
+            }
+
+            var copiedFolder = new InventoryTree
+            {
+                Name = res["name"].ToString(),
+                InventoryType = (InventoryType)res["type_default"].AsInt,
+                ParentFolderID = res["parent_id"].AsUUID,
+                Version = res["version"].AsInt,
+                Owner = new UUI(res["agent_id"].AsUUID),
+                ID = res["category_id"].AsUUID
+            };
+            var stack = new List<Map>();
+            var parentTree = new Dictionary<UUID, InventoryTree>();
+            parentTree.Add(copiedFolder.ID, copiedFolder);
+            stack.Add(res);
+            while (stack.Count > 0)
+            {
+                res = stack[0];
+                stack.RemoveAt(0);
+                Map embmap;
+                Map foldermap;
+                InventoryTree parentFolder = parentTree[res["category_id"].AsUUID];
+                parentFolder.Items.AddRange(ExtractItems(res));
+                if (res.TryGetValue("_embedded", out embmap) && embmap.TryGetValue("categories", out foldermap))
+                {
+                    foreach (KeyValuePair<string, IValue> kvp in foldermap)
+                    {
+                        var folderdata = kvp.Value as Map;
+                        if (folderdata == null)
+                        {
+                            continue;
+                        }
+                        var folder = new InventoryTree(folderdata["category_id"].AsUUID)
+                        {
+                            Name = folderdata["name"].ToString(),
+                            InventoryType = (InventoryType)folderdata["type_default"].AsInt,
+                            ParentFolderID = folderdata["parent_id"].AsUUID,
+                            Version = folderdata["version"].AsInt,
+                            Owner = new UUI(folderdata["agent_id"].AsUUID)
+                        };
+                        stack.Add(folderdata);
+                        parentFolder.Folders.Add(folder);
+                    }
+                }
+            }
+            return copiedFolder;
+
+        }
+
         void IInventoryFolderServiceInterface.Move(UUID principalID, UUID folderID, UUID toFolderID)
         {
             var headers = new Dictionary<string, string>
