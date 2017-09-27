@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<package>
+	<name>SilverSim.AISv3</name>
+	<files>
+		<file name="bin/plugins/SilverSim.AISv3.dll" is-version-src="true"/>
+	</files>
+</package>
