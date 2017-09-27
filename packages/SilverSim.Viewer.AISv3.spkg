@@ -2,6 +2,6 @@
 <package>
 	<name>SilverSim.Viewer.AISv3</name>
 	<files>
-		<file name="bin/plugins/SilverSim.Viewer.AISv3.dll"/>
+		<file name="bin/plugins/SilverSim.Viewer.AISv3.dll" is-version-src="true"/>
 	</files>
 </package>
