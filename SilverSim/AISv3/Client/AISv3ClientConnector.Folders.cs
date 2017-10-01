@@ -95,12 +95,12 @@ namespace SilverSim.AISv3.Client
             IValue res;
             try
             {
-                using (Stream sres = new HttpClient.Request($"{m_CapabilityUri}category/{folder.ParentFolderID}")
+                using (Stream sres = new HttpClient.Post(
+                    $"{m_CapabilityUri}category/{folder.ParentFolderID}",
+                    "application/llsd+xml",
+                    reqdata.Length,
+                    (Stream s) => s.Write(reqdata, 0, reqdata.Length))
                 {
-                    Method = "POST",
-                    RequestContentType = "application/llsd+xml",
-                    RequestContentLength = reqdata.Length,
-                    RequestBodyDelegate = (Stream s) => s.Write(reqdata, 0, reqdata.Length),
                     TimeoutMs = TimeoutMs
                 }.ExecuteStreamRequest())
                 {
@@ -151,9 +151,8 @@ namespace SilverSim.AISv3.Client
         {
             try
             {
-                new HttpClient.Request($"{m_CapabilityUri}category/{folderID}")
+                new HttpClient.Delete($"{m_CapabilityUri}category/{folderID}")
                 {
-                    Method = "DELETE",
                     TimeoutMs = TimeoutMs
                 }.ExecuteRequest();
             }
@@ -312,7 +311,7 @@ namespace SilverSim.AISv3.Client
             IValue iv;
             try
             {
-                using (Stream s = new HttpClient.Request($"{m_CapabilityUri}category/{key}/categories?depth=1")
+                using (Stream s = new HttpClient.Get($"{m_CapabilityUri}category/{key}/categories?depth=1")
                 {
                     TimeoutMs = TimeoutMs
                 }.ExecuteStreamRequest())
@@ -342,7 +341,7 @@ namespace SilverSim.AISv3.Client
             IValue iv;
             try
             {
-                using (Stream s = new HttpClient.Request($"{m_CapabilityUri}category/{key}/items")
+                using (Stream s = new HttpClient.Get($"{m_CapabilityUri}category/{key}/items")
                 {
                     TimeoutMs = TimeoutMs
                 }.ExecuteStreamRequest())
@@ -381,9 +380,8 @@ namespace SilverSim.AISv3.Client
             Map res;
             try
             {
-                using (Stream s = new HttpClient.Request($"{m_CapabilityUri}category/{folderID}")
+                using (Stream s = new HttpClient.Copy($"{m_CapabilityUri}category/{folderID}")
                 {
-                    Method = "COPY",
                     TimeoutMs = TimeoutMs,
                     Headers = headers
                 }.ExecuteStreamRequest())
@@ -464,9 +462,8 @@ namespace SilverSim.AISv3.Client
             };
             try
             {
-                new HttpClient.Request($"{m_CapabilityUri}category/{folderID}")
+                new HttpClient.Move($"{m_CapabilityUri}category/{folderID}")
                 {
-                    Method = "MOVE",
                     TimeoutMs = TimeoutMs,
                     Headers = headers
                 }.ExecuteRequest();
@@ -489,9 +486,8 @@ namespace SilverSim.AISv3.Client
 
         void IInventoryFolderServiceInterface.Purge(UUID folderID)
         {
-            new HttpClient.Request($"{m_CapabilityUri}category/{folderID}/children")
+            new HttpClient.Delete($"{m_CapabilityUri}category/{folderID}/children")
             {
-                Method = "DELETE",
                 TimeoutMs = TimeoutMs
             }.ExecuteRequest();
         }
@@ -512,7 +508,7 @@ namespace SilverSim.AISv3.Client
             IValue iv;
             try
             {
-                using (Stream s = new HttpClient.Request(url + "?depth=0")
+                using (Stream s = new HttpClient.Get(url + "?depth=0")
                 {
                     TimeoutMs = TimeoutMs
                 }.ExecuteStreamRequest())
@@ -653,12 +649,12 @@ namespace SilverSim.AISv3.Client
                 reqdata = ms.ToArray();
             }
 
-            new HttpClient.Request($"{m_CapabilityUri}category/{folder.ID}")
+            new HttpClient.Patch(
+                $"{m_CapabilityUri}category/{folder.ID}",
+                "application/llsd+xml",
+                reqdata.Length,
+                (Stream s) => s.Write(reqdata, 0, reqdata.Length))
             {
-                Method = "PATCH",
-                RequestContentType = "application/llsd+xml",
-                RequestContentLength = reqdata.Length,
-                RequestBodyDelegate = (Stream s) => s.Write(reqdata, 0, reqdata.Length),
                 TimeoutMs = TimeoutMs
             }.ExecuteRequest();
         }

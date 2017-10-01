@@ -119,12 +119,12 @@ namespace SilverSim.AISv3.Client
             IValue res;
             try
             {
-                using (Stream sres = new HttpClient.Request($"{m_CapabilityUri}category/{item.ParentFolderID}")
+                using (Stream sres = new HttpClient.Post(
+                    $"{m_CapabilityUri}category/{item.ParentFolderID}",
+                    "application/llsd+xml",
+                    reqdata.Length,
+                    (Stream s) => s.Write(reqdata, 0, reqdata.Length))
                 {
-                    Method = "POST",
-                    RequestContentType = "application/llsd+xml",
-                    RequestContentLength = reqdata.Length,
-                    RequestBodyDelegate = (Stream s) => s.Write(reqdata, 0, reqdata.Length),
                     TimeoutMs = TimeoutMs
                 }.ExecuteStreamRequest())
                 {
@@ -169,9 +169,8 @@ namespace SilverSim.AISv3.Client
         {
             try
             {
-                new HttpClient.Request($"{m_CapabilityUri}item/{id}")
+                new HttpClient.Delete($"{m_CapabilityUri}item/{id}")
                 {
-                    Method = "DELETE",
                     TimeoutMs = TimeoutMs
                 }.ExecuteRequest();
             }
@@ -211,9 +210,8 @@ namespace SilverSim.AISv3.Client
             };
             try
             {
-                new HttpClient.Request($"{m_CapabilityUri}item/{id}")
+                new HttpClient.Move($"{m_CapabilityUri}item/{id}")
                 {
-                    Method = "MOVE",
                     TimeoutMs = TimeoutMs,
                     Headers = headers
                 }.ExecuteRequest();
@@ -238,9 +236,8 @@ namespace SilverSim.AISv3.Client
             Map res;
             try
             {
-                using (Stream s = new HttpClient.Request($"{m_CapabilityUri}item/{id}")
+                using (Stream s = new HttpClient.Copy($"{m_CapabilityUri}item/{id}")
                 {
-                    Method = "COPY",
                     TimeoutMs = TimeoutMs,
                     Headers = headers
                 }.ExecuteStreamRequest())
@@ -274,7 +271,7 @@ namespace SilverSim.AISv3.Client
             IValue iv;
             try
             {
-                using (Stream s = new HttpClient.Request($"{m_CapabilityUri}item/{key}")
+                using (Stream s = new HttpClient.Get($"{m_CapabilityUri}item/{key}")
                 {
                     TimeoutMs = TimeoutMs
                 }.ExecuteStreamRequest())
@@ -377,12 +374,12 @@ namespace SilverSim.AISv3.Client
 
             try
             {
-                new HttpClient.Request($"{m_CapabilityUri}item/{item.ID}")
+                new HttpClient.Patch(
+                    $"{m_CapabilityUri}item/{item.ID}",
+                    "application/llsd+xml",
+                    reqdata.Length,
+                    (Stream s) => s.Write(reqdata, 0, reqdata.Length))
                 {
-                    Method = "PATCH",
-                    RequestContentType = "application/llsd+xml",
-                    RequestContentLength = reqdata.Length,
-                    RequestBodyDelegate = (Stream s) => s.Write(reqdata, 0, reqdata.Length),
                     TimeoutMs = TimeoutMs
                 }.ExecuteRequest();
             }

@@ -72,7 +72,7 @@ namespace SilverSim.AISv3.Client
             IValue iv;
             try
             {
-                using (Stream s = new HttpClient.Request($"{m_CapabilityUri}category/{folderID}?depth=1")
+                using (Stream s = new HttpClient.Get($"{m_CapabilityUri}category/{folderID}?depth=1")
                 {
                     TimeoutMs = TimeoutMs
                 }.ExecuteStreamRequest())
