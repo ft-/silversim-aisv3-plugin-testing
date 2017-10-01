@@ -72,7 +72,10 @@ namespace SilverSim.AISv3.Client
             IValue iv;
             try
             {
-                using (Stream s = HttpClient.DoStreamGetRequest($"{m_CapabilityUri}category/{folderID}?depth=1", null, TimeoutMs))
+                using (Stream s = new HttpClient.Request($"{m_CapabilityUri}category/{folderID}?depth=1")
+                {
+                    TimeoutMs = TimeoutMs
+                }.ExecuteStreamRequest())
                 {
                     iv = LlsdXml.Deserialize(s);
                 }

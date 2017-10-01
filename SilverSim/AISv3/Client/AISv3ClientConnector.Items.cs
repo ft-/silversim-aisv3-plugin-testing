@@ -119,8 +119,14 @@ namespace SilverSim.AISv3.Client
             IValue res;
             try
             {
-                using (Stream sres = HttpClient.DoStreamRequest("POST", $"{m_CapabilityUri}category/{item.ParentFolderID}", null, "application/llsd+xml", reqdata.Length,
-                    (Stream s) => s.Write(reqdata, 0, reqdata.Length), false, TimeoutMs))
+                using (Stream sres = new HttpClient.Request($"{m_CapabilityUri}category/{item.ParentFolderID}")
+                {
+                    Method = "POST",
+                    RequestContentType = "application/llsd+xml",
+                    RequestContentLength = reqdata.Length,
+                    RequestBodyDelegate = (Stream s) => s.Write(reqdata, 0, reqdata.Length),
+                    TimeoutMs = TimeoutMs
+                }.ExecuteStreamRequest())
                 {
                     res = LlsdXml.Deserialize(sres);
                 }
@@ -163,11 +169,15 @@ namespace SilverSim.AISv3.Client
         {
             try
             {
-                HttpClient.DoRequest("DELETE", $"{m_CapabilityUri}item/{id}", null, string.Empty, string.Empty, false, TimeoutMs);
+                new HttpClient.Request($"{m_CapabilityUri}item/{id}")
+                {
+                    Method = "DELETE",
+                    TimeoutMs = TimeoutMs
+                }.ExecuteRequest();
             }
-            catch(HttpException e)
+            catch (HttpException e)
             {
-                if(e.GetHttpCode() == 404)
+                if (e.GetHttpCode() == 404)
                 {
                     throw new InventoryItemNotFoundException(id);
                 }
@@ -200,8 +210,13 @@ namespace SilverSim.AISv3.Client
                 ["Destination"] = $"{m_CapabilityUri}category/{newFolder}"
             };
             try
-            { 
-                HttpClient.DoRequest("MOVE", $"{m_CapabilityUri}item/{id}", null, string.Empty, string.Empty, false, TimeoutMs, headers);
+            {
+                new HttpClient.Request($"{m_CapabilityUri}item/{id}")
+                {
+                    Method = "MOVE",
+                    TimeoutMs = TimeoutMs,
+                    Headers = headers
+                }.ExecuteRequest();
             }
             catch(HttpException e)
             {
@@ -223,7 +238,12 @@ namespace SilverSim.AISv3.Client
             Map res;
             try
             {
-                using (Stream s = HttpClient.DoStreamRequest("COPY", $"{m_CapabilityUri}item/{id}", null, string.Empty, string.Empty, false, TimeoutMs, headers))
+                using (Stream s = new HttpClient.Request($"{m_CapabilityUri}item/{id}")
+                {
+                    Method = "COPY",
+                    TimeoutMs = TimeoutMs,
+                    Headers = headers
+                }.ExecuteStreamRequest())
                 {
                     res = (Map)LlsdXml.Deserialize(s);
                 }
@@ -254,7 +274,10 @@ namespace SilverSim.AISv3.Client
             IValue iv;
             try
             {
-                using (Stream s = HttpClient.DoStreamGetRequest($"{m_CapabilityUri}item/{key}", null, TimeoutMs))
+                using (Stream s = new HttpClient.Request($"{m_CapabilityUri}item/{key}")
+                {
+                    TimeoutMs = TimeoutMs
+                }.ExecuteStreamRequest())
                 {
                     iv = LlsdXml.Deserialize(s);
                 }
@@ -354,8 +377,14 @@ namespace SilverSim.AISv3.Client
 
             try
             {
-                HttpClient.DoRequest("PATCH", $"{m_CapabilityUri}item/{item.ID}", null, "application/llsd+xml", reqdata.Length,
-                    (Stream s) => s.Write(reqdata, 0, reqdata.Length), false, TimeoutMs);
+                new HttpClient.Request($"{m_CapabilityUri}item/{item.ID}")
+                {
+                    Method = "PATCH",
+                    RequestContentType = "application/llsd+xml",
+                    RequestContentLength = reqdata.Length,
+                    RequestBodyDelegate = (Stream s) => s.Write(reqdata, 0, reqdata.Length),
+                    TimeoutMs = TimeoutMs
+                }.ExecuteRequest();
             }
             catch(HttpException e)
             {
