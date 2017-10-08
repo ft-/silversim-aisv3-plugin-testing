@@ -25,7 +25,6 @@ using SilverSim.Types;
 using SilverSim.Types.Asset;
 using SilverSim.Types.Inventory;
 using SilverSim.Types.StructuredData.Llsd;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Web;
@@ -83,7 +82,7 @@ namespace SilverSim.AISv3.Client
             var category = new Map();
             categories.Add(category);
             category.Add("name", folder.Name);
-            category.Add("type_default", (int)folder.InventoryType);
+            category.Add("type_default", (int)folder.DefaultType);
 
             byte[] reqdata;
             using (var ms = new MemoryStream())
@@ -208,7 +207,7 @@ namespace SilverSim.AISv3.Client
                 var folder = new InventoryFolder(folderdata["category_id"].AsUUID)
                 {
                     Name = folderdata["name"].ToString(),
-                    InventoryType = (InventoryType)folderdata["type_default"].AsInt,
+                    DefaultType = (AssetType)folderdata["type_default"].AsInt,
                     ParentFolderID = folderdata["parent_id"].AsUUID,
                     Version = folderdata["version"].AsInt,
                     Owner = new UUI(folderdata["agent_id"].AsUUID)
@@ -410,7 +409,7 @@ namespace SilverSim.AISv3.Client
             var copiedFolder = new InventoryTree
             {
                 Name = res["name"].ToString(),
-                InventoryType = (InventoryType)res["type_default"].AsInt,
+                DefaultType = (AssetType)res["type_default"].AsInt,
                 ParentFolderID = res["parent_id"].AsUUID,
                 Version = res["version"].AsInt,
                 Owner = new UUI(res["agent_id"].AsUUID),
@@ -440,7 +439,7 @@ namespace SilverSim.AISv3.Client
                         var folder = new InventoryTree(folderdata["category_id"].AsUUID)
                         {
                             Name = folderdata["name"].ToString(),
-                            InventoryType = (InventoryType)folderdata["type_default"].AsInt,
+                            DefaultType = (AssetType)folderdata["type_default"].AsInt,
                             ParentFolderID = folderdata["parent_id"].AsUUID,
                             Version = folderdata["version"].AsInt,
                             Owner = new UUI(folderdata["agent_id"].AsUUID)
@@ -531,7 +530,7 @@ namespace SilverSim.AISv3.Client
             }
             folder = new InventoryFolder(m["category_id"].AsUUID);
             folder.Name = m["name"].ToString();
-            folder.InventoryType = (InventoryType)m["type_default"].AsInt;
+            folder.DefaultType = (AssetType)m["type_default"].AsInt;
             folder.ParentFolderID = m["parent_id"].AsUUID;
             folder.Version = m["version"].AsInt;
             folder.Owner.ID = m["agent_id"].AsUUID;

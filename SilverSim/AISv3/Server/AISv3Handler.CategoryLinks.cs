@@ -217,7 +217,7 @@ namespace SilverSim.AISv3.Server
                 }
                 else if(item.AssetType == AssetType.LinkFolder && req.InventoryService.Folder.TryGetValue(item.AssetID, out linkedfolder))
                 {
-                    item.InventoryType = linkedfolder.InventoryType;
+                    item.InventoryType = InventoryType.Unknown;
                     itemdata = item.ToAisV3(req.FullPrefixUrl);
                     var embedded = new Map();
                     embedded.Add("category", linkedfolder.ToAisV3(req.FullPrefixUrl));

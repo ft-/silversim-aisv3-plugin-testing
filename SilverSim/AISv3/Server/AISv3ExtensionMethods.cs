@@ -32,7 +32,7 @@ namespace SilverSim.AISv3.Server
         public static Map ToAisV3(this InventoryFolder folder, string fullprefixuri) => new Map
         {
             { "name", folder.Name },
-            { "type_default", (int)folder.InventoryType },
+            { "type_default", (int)folder.DefaultType },
             { "parent_id", folder.ParentFolderID },
             { "version", folder.Version },
             { "agent_id", folder.Owner.ID },
@@ -213,7 +213,7 @@ namespace SilverSim.AISv3.Server
             folder.Name = category_map["name"].ToString();
             if (category_map.TryGetValue("type_default", out intval))
             {
-                folder.InventoryType = (InventoryType)intval.AsInt;
+                folder.DefaultType = (AssetType)intval.AsInt;
             }
             folder.Owner = agent;
             folder.ParentFolderID = toParentFolderId;

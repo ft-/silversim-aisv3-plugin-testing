@@ -91,7 +91,7 @@ namespace SilverSim.AISv3.Server
                 { "_links", reflinks },
                 { "_base_uri", self },
                 { "name", folder.Name },
-                { "type_default", (int)folder.InventoryType },
+                { "type_default", (int)folder.DefaultType },
                 { "parent_id", folder.ParentFolderID },
                 { "version", folder.Version },
                 { "agent_id", folder.Owner.ID },

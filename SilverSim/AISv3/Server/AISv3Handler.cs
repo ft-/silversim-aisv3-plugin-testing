@@ -174,45 +174,45 @@ namespace SilverSim.AISv3.Server
             else if(TryGetFolder(request, folder.ParentFolderID, out parentFolder, folderCache) && 
                 parentFolder.ParentFolderID == UUID.Zero)
             {
-                switch(folder.InventoryType)
+                switch(folder.DefaultType)
                 {
-                    case InventoryType.Animation:
+                    case AssetType.Animation:
                         return request.FullPrefixUrl + "/category/animatn";
-                    case InventoryType.Bodypart:
+                    case AssetType.Bodypart:
                         return request.FullPrefixUrl + "/category/bodypart";
-                    case InventoryType.Clothing:
+                    case AssetType.Clothing:
                         return request.FullPrefixUrl + "/category/clothing";
-                    case InventoryType.CurrentOutfitFolder:
+                    case AssetType.CurrentOutfitFolder:
                         return request.FullPrefixUrl + "/category/current";
-                    case InventoryType.FavoriteFolder:
+                    case AssetType.FavoriteFolder:
                         return request.FullPrefixUrl + "/category/favorite";
-                    case InventoryType.Gesture:
+                    case AssetType.Gesture:
                         return request.FullPrefixUrl + "/category/gesture";
-                    case InventoryType.Inbox:
+                    case AssetType.Inbox:
                         return request.FullPrefixUrl + "/category/inbox";
-                    case InventoryType.Landmark:
+                    case AssetType.Landmark:
                         return request.FullPrefixUrl + "/category/landmark";
-                    case InventoryType.LSLText:
+                    case AssetType.LSLText:
                         return request.FullPrefixUrl + "/category/lsltext";
-                    case InventoryType.LostAndFoundFolder:
+                    case AssetType.LostAndFoundFolder:
                         return request.FullPrefixUrl + "/category/lstndfnd";
-                    case InventoryType.MyOutfitsFolder:
+                    case AssetType.MyOutfitsFolder:
                         return request.FullPrefixUrl + "/category/my_otfts";
-                    case InventoryType.Notecard:
+                    case AssetType.Notecard:
                         return request.FullPrefixUrl + "/category/notecard";
-                    case InventoryType.Object:
+                    case AssetType.Object:
                         return request.FullPrefixUrl + "/category/object";
-                    case InventoryType.Outbox:
+                    case AssetType.Outbox:
                         return request.FullPrefixUrl + "/category/outbox";
-                    case InventoryType.RootFolder:
+                    case AssetType.RootFolder:
                         return request.FullPrefixUrl + "/category/root";
-                    case InventoryType.SnapshotFolder:
+                    case AssetType.SnapshotFolder:
                         return request.FullPrefixUrl + "/category/snapshot";
-                    case InventoryType.Sound:
+                    case AssetType.Sound:
                         return request.FullPrefixUrl + "/category/sound";
-                    case InventoryType.Texture:
+                    case AssetType.Texture:
                         return request.FullPrefixUrl + "/category/texture";
-                    case InventoryType.TrashFolder:
+                    case AssetType.TrashFolder:
                         return request.FullPrefixUrl + "/category/trash";
                     default:
                         break;
