@@ -38,11 +38,7 @@ namespace SilverSim.AISv3.Server
         public void Startup(ConfigurationLoader loader)
         {
             m_HttpServer = loader.HttpServer;
-            try
-            {
-                m_HttpsServer = loader.HttpsServer;
-            }
-            catch
+            if(!loader.TryGetHttpsServer(out m_HttpsServer))
             {
                 m_HttpsServer = null;
             }

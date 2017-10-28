@@ -67,14 +67,9 @@ namespace SilverSim.AISv3.Server
             m_UserAccountService = loader.GetService<UserAccountServiceInterface>(m_UserAccountServiceName);
             m_HttpServer = loader.HttpServer;
             m_HttpServer.StartsWithUriHandlers.Add("/CAPS/InventoryAPIv3/", CapsHandler);
-            try
+            if(loader.TryGetHttpsServer(out m_HttpsServer))
             {
-                m_HttpsServer = loader.HttpsServer;
                 m_HttpsServer.StartsWithUriHandlers.Add("/CAPS/InventoryAPIv3/", CapsHandler);
-            }
-            catch
-            {
-                m_HttpsServer = null;
             }
         }
 
