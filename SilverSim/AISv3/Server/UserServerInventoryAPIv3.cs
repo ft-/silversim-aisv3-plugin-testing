@@ -30,6 +30,7 @@ using SilverSim.ServiceInterfaces.Traveling;
 using SilverSim.Types;
 using SilverSim.Types.Account;
 using SilverSim.Types.TravelingData;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net;
 
@@ -127,7 +128,7 @@ namespace SilverSim.AISv3.Server
                 serverURI + rawPrefixUrl));
         }
 
-        void ILoginUserCapsGetInterface.GetCaps(UUID agentid, UUID sessionid, Map userCapList)
+        void ILoginUserCapsGetInterface.GetCaps(UUID agentid, UUID sessionid, Dictionary<string, string> userCapList)
         {
             string serverURI = m_HttpsServer != null ? m_HttpsServer.ServerURI : m_HttpServer.ServerURI;
             userCapList.Add("InventoryAPIv3", $"{serverURI}/CAPS/InventoryAPIv3/{sessionid}");
