@@ -68,10 +68,10 @@ namespace SilverSim.AISv3.Server
             m_InventoryService = loader.GetService<InventoryServiceInterface>(m_InventoryServiceName);
             m_UserAccountService = loader.GetService<UserAccountServiceInterface>(m_UserAccountServiceName);
             m_HttpServer = loader.HttpServer;
-            m_HttpServer.StartsWithUriHandlers.Add("/CAPS/InventoryAPIv3/", CapsHandler);
+            m_HttpServer.StartsWithUriHandlers.Add("/UserCAPS/InventoryAPIv3/", CapsHandler);
             if(loader.TryGetHttpsServer(out m_HttpsServer))
             {
-                m_HttpsServer.StartsWithUriHandlers.Add("/CAPS/InventoryAPIv3/", CapsHandler);
+                m_HttpsServer.StartsWithUriHandlers.Add("/UserCAPS/InventoryAPIv3/", CapsHandler);
             }
         }
 
@@ -115,7 +115,7 @@ namespace SilverSim.AISv3.Server
                 return;
             }
 
-            string rawPrefixUrl = "/CAPS/InventoryAPIv3/" + sessionid;
+            string rawPrefixUrl = "/UserCAPS/InventoryAPIv3/" + sessionid;
             string serverURI = req.IsSsl ? m_HttpsServer.ServerURI : m_HttpServer.ServerURI;
             serverURI = serverURI.Substring(0, serverURI.Length - 1);
 
@@ -131,7 +131,7 @@ namespace SilverSim.AISv3.Server
         void ILoginUserCapsGetInterface.GetCaps(UUID agentid, UUID sessionid, Dictionary<string, string> userCapList)
         {
             string serverURI = m_HttpsServer != null ? m_HttpsServer.ServerURI : m_HttpServer.ServerURI;
-            userCapList.Add("InventoryAPIv3", $"{serverURI}/CAPS/InventoryAPIv3/{sessionid}");
+            userCapList.Add("InventoryAPIv3", $"{serverURI}/UserCAPS/InventoryAPIv3/{sessionid}");
         }
     }
 }
