@@ -22,6 +22,7 @@
 using Nini.Config;
 using SilverSim.Main.Common;
 using SilverSim.Main.Common.HttpServer;
+using SilverSim.ServiceInterfaces;
 using SilverSim.ServiceInterfaces.Account;
 using SilverSim.ServiceInterfaces.Inventory;
 using SilverSim.ServiceInterfaces.Presence;
@@ -36,7 +37,7 @@ namespace SilverSim.AISv3.Server
 {
     [PluginName("AISv3Handler")]
     [Description("AISv3 user inventory server")]
-    public class UserServerInventoryAPIv3 : IPlugin
+    public class UserServerInventoryAPIv3 : IPlugin, ILoginUserCapsGetInterface
     {
         private PresenceServiceInterface m_PresenceService;
         private TravelingDataServiceInterface m_TravelingDataService;
@@ -84,47 +85,52 @@ namespace SilverSim.AISv3.Server
                 return;
             }
 
-            UUID agentid;
-            if(!UUID.TryParse(elements[2], out agentid))
-            {
-                req.ErrorResponse(HttpStatusCode.NotFound, "Not found");
-                return;
-            }
-
-            UserAccount account;
-            if(!m_UserAccountService.TryGetValue(UUID.Zero, agentid, out account))
+            UUID sessionid;
+            if(!UUID.TryParse(elements[2], out sessionid))
             {
                 req.ErrorResponse(HttpStatusCode.NotFound, "Not found");
                 return;
             }
 
             bool foundIP = false;
-            UUI agent = UUI.Unknown;
-            foreach(TravelingDataInfo trv in m_TravelingDataService.GetTravelingDatasByAgentUUID(agentid))
+            UUID agent = UUID.Zero;
+            try
             {
+                TravelingDataInfo trv = m_TravelingDataService.GetTravelingData(sessionid);
                 if(trv.ClientIPAddress == req.CallerIP)
                 {
+                    agent = trv.UserID;
                     foundIP = true;
                 }
             }
+            catch
+            {
+                /* entry not found */
+            }
 
-            if(!foundIP)
+            if(!foundIP || !m_UserAccountService.ContainsKey(UUID.Zero, agent))
             {
                 req.ErrorResponse(HttpStatusCode.NotFound, "Not found");
                 return;
             }
 
-            string rawPrefixUrl = "/CAPS/InventoryAPIv3/" + agentid;
+            string rawPrefixUrl = "/CAPS/InventoryAPIv3/" + sessionid;
             string serverURI = req.IsSsl ? m_HttpsServer.ServerURI : m_HttpServer.ServerURI;
             serverURI = serverURI.Substring(0, serverURI.Length - 1);
 
             AISv3Handler.MainHandler(new AISv3Handler.Request(
                 req,
                 m_InventoryService,
-                account.Principal,
+                new UUI(agent),
                 false,
                 rawPrefixUrl,
                 serverURI + rawPrefixUrl));
+        }
+
+        void ILoginUserCapsGetInterface.GetCaps(UUID agentid, UUID sessionid, Map userCapList)
+        {
+            string serverURI = m_HttpsServer != null ? m_HttpsServer.ServerURI : m_HttpServer.ServerURI;
+            userCapList.Add("InventoryAPIv3", $"{serverURI}/CAPS/InventoryAPIv3/{sessionid}");
         }
     }
 }
