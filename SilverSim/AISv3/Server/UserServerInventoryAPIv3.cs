@@ -131,7 +131,7 @@ namespace SilverSim.AISv3.Server
         void ILoginUserCapsGetInterface.GetCaps(UUID agentid, UUID sessionid, Dictionary<string, string> userCapList)
         {
             string serverURI = m_HttpsServer != null ? m_HttpsServer.ServerURI : m_HttpServer.ServerURI;
-            userCapList.Add("InventoryAPIv3", $"{serverURI}/UserCAPS/InventoryAPIv3/{sessionid}");
+            userCapList.Add("InventoryAPIv3", $"{serverURI}UserCAPS/InventoryAPIv3/{sessionid}");
         }
     }
 }
