@@ -1,6 +1,17 @@
 <?xml version="1.0"?>
 <package>
 	<name>SilverSim.AISv3</name>
+	<default-configuration>
+		<source>SilverSim.AISv3:SimulatorConfig.ini</source>
+		<use-if-started-as>bare</use-if-started-as>
+		<use-if-started-as>simulator</use-if-started-as>
+		<use-if-started-as>standalone</use-if-started-as>
+	</default-configuration>
+	<default-configuration>
+		<source>SilverSim.AISv3:UserServerConfig.ini</source>
+		<use-if-started-as>grid</use-if-started-as>
+		<use-if-started-as>standalone</use-if-started-as>
+	</default-configuration>
 	<files>
 		<file name="bin/plugins/SilverSim.AISv3.dll" is-version-src="true"/>
 	</files>
