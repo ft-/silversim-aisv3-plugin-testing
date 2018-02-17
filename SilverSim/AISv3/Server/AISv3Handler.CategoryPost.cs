@@ -20,13 +20,11 @@
 // exception statement from your version.
 
 using SilverSim.Types;
-using SilverSim.Types.Asset;
 using SilverSim.Types.Inventory;
 using SilverSim.Types.StructuredData.Llsd;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 
 namespace SilverSim.AISv3.Server

@@ -28,7 +28,6 @@ using SilverSim.ServiceInterfaces.Inventory;
 using SilverSim.ServiceInterfaces.Presence;
 using SilverSim.ServiceInterfaces.Traveling;
 using SilverSim.Types;
-using SilverSim.Types.Account;
 using SilverSim.Types.TravelingData;
 using System.Collections.Generic;
 using System.ComponentModel;
