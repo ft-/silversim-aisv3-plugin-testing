@@ -255,17 +255,14 @@ namespace SilverSim.AISv3.Client
                         Creator = new UUI(perminfo["creator_id"].AsUUID),
                         LastOwner = new UUI(perminfo["last_owner_id"].AsUUID),
                         Group = new UGI(perminfo["group_id"].AsUUID),
-                        Permissions = new InventoryPermissionsData
-                        {
-                            Base = (InventoryPermissionsMask)perminfo["base_mask"].AsInt,
-                            Group = (InventoryPermissionsMask)perminfo["group_mask"].AsInt,
-                            NextOwner = (InventoryPermissionsMask)perminfo["next_owner_mask"].AsInt,
-                            Current = (InventoryPermissionsMask)perminfo["owner_mask"].AsInt,
-                            EveryOne = (InventoryPermissionsMask)perminfo["everyone_mask"].AsInt
-                        },
                         AssetType = (AssetType)itemdata["type"].AsInt,
                         Description = itemdata["desc"].ToString()
                     };
+                    item.Permissions.Base = (InventoryPermissionsMask)perminfo["base_mask"].AsInt;
+                    item.Permissions.Group = (InventoryPermissionsMask)perminfo["group_mask"].AsInt;
+                    item.Permissions.NextOwner = (InventoryPermissionsMask)perminfo["next_owner_mask"].AsInt;
+                    item.Permissions.Current = (InventoryPermissionsMask)perminfo["owner_mask"].AsInt;
+                    item.Permissions.EveryOne = (InventoryPermissionsMask)perminfo["everyone_mask"].AsInt;
                     result.Add(item);
                 }
             }
@@ -288,17 +285,14 @@ namespace SilverSim.AISv3.Client
                         Flags = (InventoryFlags)itemdata["flags"].AsInt,
                         Owner = new UUI(itemdata["agent_id"].AsUUID),
                         LastOwner = new UUI(itemdata["agent_id"].AsUUID),
-                        Permissions = new InventoryPermissionsData
-                        {
-                            Base = InventoryPermissionsMask.Every,
-                            Group = InventoryPermissionsMask.None,
-                            NextOwner = InventoryPermissionsMask.None,
-                            Current = InventoryPermissionsMask.Every,
-                            EveryOne = InventoryPermissionsMask.None
-                        },
                         AssetType = (AssetType)itemdata["type"].AsInt,
                         Description = itemdata["desc"].ToString()
                     };
+                    item.Permissions.Base = InventoryPermissionsMask.Every;
+                    item.Permissions.Group = InventoryPermissionsMask.None;
+                    item.Permissions.NextOwner = InventoryPermissionsMask.None;
+                    item.Permissions.Current = InventoryPermissionsMask.Every;
+                    item.Permissions.EveryOne = InventoryPermissionsMask.None;
                     result.Add(item);
                 }
             }
