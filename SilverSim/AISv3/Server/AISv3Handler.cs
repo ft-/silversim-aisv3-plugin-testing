@@ -59,14 +59,14 @@ namespace SilverSim.AISv3.Server
         {
             public readonly HttpRequest HttpRequest;
             public readonly InventoryServiceInterface InventoryService;
-            public readonly UUI Agent;
+            public readonly UGUI Agent;
             public readonly bool IsLibrary;
             public string RawPrefixUrl;
             public string FullPrefixUrl;
             public bool IsSimulate;
             public int Depth;
 
-            public Request(HttpRequest req, InventoryServiceInterface inventoryService, UUI agent, bool isLibrary, string rawPrefixUrl, string fullPrefixUrl)
+            public Request(HttpRequest req, InventoryServiceInterface inventoryService, UGUI agent, bool isLibrary, string rawPrefixUrl, string fullPrefixUrl)
             {
                 HttpRequest = req;
                 InventoryService = inventoryService;

@@ -98,7 +98,7 @@ namespace SilverSim.AISv3.Client
 
             inventoryFolderContent = new InventoryFolderContent();
             inventoryFolderContent.FolderID = resmap["category_id"].AsUUID;
-            inventoryFolderContent.Owner = new UUI(resmap["agent_id"].AsUUID);
+            inventoryFolderContent.Owner = new UGUI(resmap["agent_id"].AsUUID);
             inventoryFolderContent.Folders = ExtractFolders(resmap);
             inventoryFolderContent.Items = ExtractItems(resmap);
 

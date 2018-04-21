@@ -121,7 +121,7 @@ namespace SilverSim.AISv3.Server
             AISv3Handler.MainHandler(new AISv3Handler.Request(
                 req,
                 m_InventoryService,
-                new UUI(agent),
+                new UGUI(agent),
                 false,
                 rawPrefixUrl,
                 serverURI + rawPrefixUrl));

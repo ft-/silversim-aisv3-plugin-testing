@@ -107,7 +107,7 @@ namespace SilverSim.AISv3.Server
             return resmap;
         }
 
-        public static InventoryItem ItemFromAisV3(this Map item_map, UUI agent, UUID toParentFolderId, string fullprefixuri)
+        public static InventoryItem ItemFromAisV3(this Map item_map, UGUI agent, UUID toParentFolderId, string fullprefixuri)
         {
             var item = new InventoryItem(UUID.Random)
             {
@@ -206,7 +206,7 @@ namespace SilverSim.AISv3.Server
             return item;
         }
 
-        public static InventoryFolder CategoryFromAisV3(this Map category_map, UUI agent, UUID toParentFolderId, string fullprefixuri)
+        public static InventoryFolder CategoryFromAisV3(this Map category_map, UGUI agent, UUID toParentFolderId, string fullprefixuri)
         {
             var folder = new InventoryFolder(UUID.Random);
             Integer intval;

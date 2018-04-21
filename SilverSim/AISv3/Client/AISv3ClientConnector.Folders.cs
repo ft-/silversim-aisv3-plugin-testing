@@ -210,7 +210,7 @@ namespace SilverSim.AISv3.Client
                     DefaultType = (AssetType)folderdata["type_default"].AsInt,
                     ParentFolderID = folderdata["parent_id"].AsUUID,
                     Version = folderdata["version"].AsInt,
-                    Owner = new UUI(folderdata["agent_id"].AsUUID)
+                    Owner = new UGUI(folderdata["agent_id"].AsUUID)
                 };
                 result.Add(folder);
             }
@@ -251,9 +251,9 @@ namespace SilverSim.AISv3.Client
                         CreationDate = Date.UnixTimeToDateTime(itemdata["created_at"].AsULong),
                         ParentFolderID = itemdata["parent_id"].AsUUID,
                         Flags = (InventoryFlags)itemdata["flags"].AsInt,
-                        Owner = new UUI(perminfo["owner_id"].AsUUID),
-                        Creator = new UUI(perminfo["creator_id"].AsUUID),
-                        LastOwner = new UUI(perminfo["last_owner_id"].AsUUID),
+                        Owner = new UGUI(perminfo["owner_id"].AsUUID),
+                        Creator = new UGUI(perminfo["creator_id"].AsUUID),
+                        LastOwner = new UGUI(perminfo["last_owner_id"].AsUUID),
                         Group = new UGI(perminfo["group_id"].AsUUID),
                         AssetType = (AssetType)itemdata["type"].AsInt,
                         Description = itemdata["desc"].ToString()
@@ -283,8 +283,8 @@ namespace SilverSim.AISv3.Client
                         CreationDate = Date.UnixTimeToDateTime(itemdata["created_at"].AsULong),
                         ParentFolderID = itemdata["parent_id"].AsUUID,
                         Flags = (InventoryFlags)itemdata["flags"].AsInt,
-                        Owner = new UUI(itemdata["agent_id"].AsUUID),
-                        LastOwner = new UUI(itemdata["agent_id"].AsUUID),
+                        Owner = new UGUI(itemdata["agent_id"].AsUUID),
+                        LastOwner = new UGUI(itemdata["agent_id"].AsUUID),
                         AssetType = (AssetType)itemdata["type"].AsInt,
                         Description = itemdata["desc"].ToString()
                     };
@@ -406,7 +406,7 @@ namespace SilverSim.AISv3.Client
                 DefaultType = (AssetType)res["type_default"].AsInt,
                 ParentFolderID = res["parent_id"].AsUUID,
                 Version = res["version"].AsInt,
-                Owner = new UUI(res["agent_id"].AsUUID),
+                Owner = new UGUI(res["agent_id"].AsUUID),
                 ID = res["category_id"].AsUUID
             };
             var stack = new List<Map>();
@@ -436,7 +436,7 @@ namespace SilverSim.AISv3.Client
                             DefaultType = (AssetType)folderdata["type_default"].AsInt,
                             ParentFolderID = folderdata["parent_id"].AsUUID,
                             Version = folderdata["version"].AsInt,
-                            Owner = new UUI(folderdata["agent_id"].AsUUID)
+                            Owner = new UGUI(folderdata["agent_id"].AsUUID)
                         };
                         stack.Add(folderdata);
                         parentFolder.Folders.Add(folder);
