@@ -33,45 +33,6 @@ namespace SilverSim.AISv3.Client
 {
     public partial class AISv3ClientConnector : IInventoryFolderServiceInterface
     {
-        InventoryFolder IInventoryFolderServiceInterface.this[UUID key]
-        {
-            get
-            {
-                InventoryFolder folder;
-                if (!Folder.TryGetValue(key, out folder))
-                {
-                    throw new InventoryFolderNotFoundException(key);
-                }
-                return folder;
-            }
-        }
-
-        InventoryFolder IInventoryFolderServiceInterface.this[UUID principalID, AssetType type]
-        {
-            get
-            {
-                InventoryFolder folder;
-                if(!Folder.TryGetValue(principalID, type, out folder))
-                {
-                    throw new InventoryFolderNotFoundException();
-                }
-                return folder;
-            }
-        }
-
-        InventoryFolder IInventoryFolderServiceInterface.this[UUID principalID, UUID key]
-        {
-            get
-            {
-                InventoryFolder folder;
-                if(!Folder.TryGetValue(principalID, key, out folder))
-                {
-                    throw new InventoryFolderNotFoundException(key);
-                }
-                return folder;
-            }
-        }
-
         IInventoryFolderContentServiceInterface IInventoryFolderServiceInterface.Content => this;
 
         void IInventoryFolderServiceInterface.Add(InventoryFolder folder)
