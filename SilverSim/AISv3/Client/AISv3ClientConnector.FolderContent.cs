@@ -26,6 +26,7 @@ using SilverSim.Types.Inventory;
 using SilverSim.Types.StructuredData.Llsd;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Web;
 
 namespace SilverSim.AISv3.Client
@@ -57,24 +58,18 @@ namespace SilverSim.AISv3.Client
         bool IInventoryFolderContentServiceInterface.TryGetValue(UUID principalID, UUID folderID, out InventoryFolderContent inventoryFolderContent)
         {
             IValue iv;
-            try
+            HttpStatusCode statuscode;
+            using (Stream s = new HttpClient.Get($"{m_CapabilityUri}category/{folderID}?depth=1")
             {
-                using (Stream s = new HttpClient.Get($"{m_CapabilityUri}category/{folderID}?depth=1")
-                {
-                    TimeoutMs = TimeoutMs
-                }.ExecuteStreamRequest())
-                {
-                    iv = LlsdXml.Deserialize(s);
-                }
-            }
-            catch (HttpException e)
+                TimeoutMs = TimeoutMs
+            }.ExecuteStreamRequest(out statuscode))
             {
-                if (e.GetHttpCode() == 404)
+                if(statuscode != HttpStatusCode.OK)
                 {
                     inventoryFolderContent = default(InventoryFolderContent);
                     return false;
                 }
-                throw;
+                iv = LlsdXml.Deserialize(s);
             }
 
             var resmap = iv as Map;

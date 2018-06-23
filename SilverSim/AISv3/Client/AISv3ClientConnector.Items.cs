@@ -27,6 +27,7 @@ using SilverSim.Types.Inventory;
 using SilverSim.Types.StructuredData.Llsd;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Web;
 
 /* initially disabling Obsolete here */
@@ -141,20 +142,12 @@ namespace SilverSim.AISv3.Client
 
         void IInventoryItemServiceInterface.Delete(UUID principalID, UUID id)
         {
-            try
+            if(new HttpClient.Delete($"{m_CapabilityUri}item/{id}")
             {
-                new HttpClient.Delete($"{m_CapabilityUri}item/{id}")
-                {
-                    TimeoutMs = TimeoutMs
-                }.ExecuteRequest();
-            }
-            catch (HttpException e)
+                TimeoutMs = TimeoutMs
+            }.ExecuteStatusRequest() == System.Net.HttpStatusCode.NotFound)
             {
-                if (e.GetHttpCode() == 404)
-                {
-                    throw new InventoryItemNotFoundException(id);
-                }
-                throw;
+                throw new InventoryItemNotFoundException(id);
             }
         }
 
@@ -182,22 +175,15 @@ namespace SilverSim.AISv3.Client
             {
                 ["Destination"] = $"{m_CapabilityUri}category/{newFolder}"
             };
-            try
+            switch(new HttpClient.Move($"{m_CapabilityUri}item/{id}")
             {
-                new HttpClient.Move($"{m_CapabilityUri}item/{id}")
-                {
-                    TimeoutMs = TimeoutMs,
-                    Headers = headers
-                }.ExecuteRequest();
-            }
-            catch(HttpException e)
-            {
-                switch(e.GetHttpCode())
-                {
-                    case 404: throw new InvalidParentFolderIdException();
-                    case 410: throw new InventoryItemNotFoundException(id);
-                    default: throw;
-                }
+                TimeoutMs = TimeoutMs,
+                Headers = headers,
+                DisableExceptions = HttpClient.Request.DisableExceptionFlags.DisableGone
+            }.ExecuteStatusRequest())
+            { 
+                case HttpStatusCode.NotFound: throw new InvalidParentFolderIdException();
+                case HttpStatusCode.Gone: throw new InventoryItemNotFoundException(id);
             }
         }
 
@@ -208,26 +194,26 @@ namespace SilverSim.AISv3.Client
                 ["Destination"] = $"{m_CapabilityUri}category/{newFolder}"
             };
             Map res;
-            try
+            HttpStatusCode statuscode;
+            using (Stream s = new HttpClient.Copy($"{m_CapabilityUri}item/{id}")
             {
-                using (Stream s = new HttpClient.Copy($"{m_CapabilityUri}item/{id}")
-                {
-                    TimeoutMs = TimeoutMs,
-                    Headers = headers
-                }.ExecuteStreamRequest())
-                {
-                    res = (Map)LlsdXml.Deserialize(s);
-                }
-            }
-            catch (HttpException e)
+                TimeoutMs = TimeoutMs,
+                Headers = headers,
+                DisableExceptions = HttpClient.Request.DisableExceptionFlags.DisableForbidden | HttpClient.Request.DisableExceptionFlags.DisableGone
+            }.ExecuteStreamRequest(out statuscode))
             {
-                switch (e.GetHttpCode())
+                switch (statuscode)
                 {
-                    case 403: throw new InventoryItemNotCopiableException(id);
-                    case 404: throw new InvalidParentFolderIdException();
-                    case 410: throw new InventoryItemNotFoundException(id);
-                    default: throw;
+                    case HttpStatusCode.OK:
+                        break;
+                    case HttpStatusCode.Forbidden:
+                        throw new InventoryItemNotCopiableException(id);
+                    case HttpStatusCode.Gone:
+                        throw new InventoryItemNotFoundException(id);
+                    default:
+                        throw new InvalidParentFolderIdException();
                 }
+                res = (Map)LlsdXml.Deserialize(s);
             }
 
             AnArray created_items;
@@ -243,23 +229,17 @@ namespace SilverSim.AISv3.Client
         {
             item = default(InventoryItem);
             IValue iv;
-            try
+            HttpStatusCode statuscode;
+            using (Stream s = new HttpClient.Get($"{m_CapabilityUri}item/{key}")
             {
-                using (Stream s = new HttpClient.Get($"{m_CapabilityUri}item/{key}")
-                {
-                    TimeoutMs = TimeoutMs
-                }.ExecuteStreamRequest())
-                {
-                    iv = LlsdXml.Deserialize(s);
-                }
-            }
-            catch (HttpException e)
+                TimeoutMs = TimeoutMs
+            }.ExecuteStreamRequest(out statuscode))
             {
-                if (e.GetHttpCode() == 404)
+                if(statuscode != HttpStatusCode.OK)
                 {
                     return false;
                 }
-                throw;
+                iv = LlsdXml.Deserialize(s);
             }
             var resmap = iv as Map;
             if (resmap == null)
@@ -346,24 +326,16 @@ namespace SilverSim.AISv3.Client
                 reqdata = ms.ToArray();
             }
 
-            try
+            if(new HttpClient.Patch(
+                $"{m_CapabilityUri}item/{item.ID}",
+                "application/llsd+xml",
+                reqdata.Length,
+                (Stream s) => s.Write(reqdata, 0, reqdata.Length))
             {
-                new HttpClient.Patch(
-                    $"{m_CapabilityUri}item/{item.ID}",
-                    "application/llsd+xml",
-                    reqdata.Length,
-                    (Stream s) => s.Write(reqdata, 0, reqdata.Length))
-                {
-                    TimeoutMs = TimeoutMs
-                }.ExecuteRequest();
-            }
-            catch(HttpException e)
+                TimeoutMs = TimeoutMs
+            }.ExecuteStatusRequest() == HttpStatusCode.NotFound)
             {
-                if(e.GetHttpCode() == 404)
-                {
-                    throw new InventoryItemNotFoundException(item.ID);
-                }
-                throw;
+                throw new InventoryItemNotFoundException(item.ID);
             }
         }
     }
