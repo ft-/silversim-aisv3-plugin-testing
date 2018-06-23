@@ -27,7 +27,6 @@ using SilverSim.Types.StructuredData.Llsd;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Web;
 
 namespace SilverSim.AISv3.Client
 {
