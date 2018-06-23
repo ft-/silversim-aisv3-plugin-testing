@@ -37,6 +37,8 @@ namespace SilverSim.AISv3.Client
         private readonly string m_CapabilityUri;
         public int TimeoutMs { get; set; }
 
+        public override bool SupportsLegacyFunctions => true;
+
         public AISv3ClientConnector(IConfig ownSection)
         {
             TimeoutMs = 20000;
