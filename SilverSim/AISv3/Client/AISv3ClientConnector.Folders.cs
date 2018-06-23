@@ -64,7 +64,7 @@ namespace SilverSim.AISv3.Client
                 TimeoutMs = TimeoutMs
             }.ExecuteStreamRequest(out statuscode))
             {
-                if(statuscode != HttpStatusCode.OK)
+                if(statuscode != HttpStatusCode.Created)
                 {
                     throw new InventoryFolderNotFoundException(folder.ParentFolderID);
                 }
