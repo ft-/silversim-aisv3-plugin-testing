@@ -222,8 +222,9 @@ namespace SilverSim.AISv3.Server
                 /* we need to pass it */
                 throw;
             }
-            catch
+            catch(Exception e)
             {
+                m_Log.Debug("Exception occured", e);
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
@@ -349,8 +350,9 @@ namespace SilverSim.AISv3.Server
                 /* we need to pass it */
                 throw;
             }
-            catch
+            catch(Exception e)
             {
+                m_Log.Debug("Exception occured", e);
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
@@ -445,8 +447,9 @@ namespace SilverSim.AISv3.Server
                 /* we need to pass it */
                 throw;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                m_Log.Debug("Exception occured", e);
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
@@ -461,8 +464,9 @@ namespace SilverSim.AISv3.Server
                 ErrorResponse(req, HttpStatusCode.Gone, AisErrorCode.Gone, "Category gone");
                 return;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                m_Log.Debug("Exception occured", e);
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
@@ -486,8 +490,9 @@ namespace SilverSim.AISv3.Server
                 /* we need to pass it */
                 throw;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                m_Log.Debug("Exception occured", e);
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }

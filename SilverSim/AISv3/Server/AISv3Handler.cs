@@ -19,12 +19,14 @@
 // obligated to do so. If you do not wish to do so, delete this
 // exception statement from your version.
 
+using log4net;
 using SilverSim.Main.Common.HttpServer;
 using SilverSim.ServiceInterfaces.Inventory;
 using SilverSim.Types;
 using SilverSim.Types.Asset;
 using SilverSim.Types.Inventory;
 using SilverSim.Types.StructuredData.Llsd;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -33,6 +35,7 @@ namespace SilverSim.AISv3.Server
 {
     public static partial class AISv3Handler
     {
+        private static readonly ILog m_Log = LogManager.GetLogger("AISV3 HANDLER");
         private enum AisErrorCode
         {
             InvalidRequest = 0,
@@ -270,8 +273,9 @@ namespace SilverSim.AISv3.Server
                     {
                         /* ignore */
                     }
-                    catch
+                    catch(Exception e)
                     {
+                        m_Log.Debug("Exception occured", e);
                         ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                     }
                     break;
@@ -285,8 +289,9 @@ namespace SilverSim.AISv3.Server
                     {
                         /* ignore */
                     }
-                    catch
+                    catch(Exception e)
                     {
+                        m_Log.Debug("Exception occured", e);
                         ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                     }
                     break;

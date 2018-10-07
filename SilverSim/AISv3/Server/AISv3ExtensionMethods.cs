@@ -64,7 +64,7 @@ namespace SilverSim.AISv3.Server
             {
                 resmap.Add("asset_id", item.AssetID);
             }
-            resmap.Add("created_at", item.CreationDate.DateTimeToUnixTime());
+            resmap.Add("created_at", item.CreationDate.DateTimeToUnixTime().ToString());
             resmap.Add("parent_id", item.ParentFolderID);
             resmap.Add("flags", (int)item.Flags);
             resmap.Add("agent_id", item.Owner.ID);

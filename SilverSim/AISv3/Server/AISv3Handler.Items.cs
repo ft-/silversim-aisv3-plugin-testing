@@ -25,6 +25,7 @@ using SilverSim.Types;
 using SilverSim.Types.Asset;
 using SilverSim.Types.Inventory;
 using SilverSim.Types.StructuredData.Llsd;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -311,8 +312,9 @@ namespace SilverSim.AISv3.Server
                 /* we need to pass it */
                 throw;
             }
-            catch
+            catch(Exception e)
             {
+                m_Log.Debug("Exception occured", e);
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
@@ -405,8 +407,9 @@ namespace SilverSim.AISv3.Server
                 /* we need to pass it */
                 throw;
             }
-            catch
+            catch(Exception e)
             {
+                m_Log.Debug("Exception occured", e);
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
@@ -480,8 +483,9 @@ namespace SilverSim.AISv3.Server
                 /* we need to pass it */
                 throw;
             }
-            catch
+            catch(Exception e)
             {
+                m_Log.Debug("Exception occured", e);
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
@@ -491,8 +495,9 @@ namespace SilverSim.AISv3.Server
             {
                 DeleteItem(req, item, data);
             }
-            catch
+            catch(Exception e)
             {
+                m_Log.Debug("Exception occured", e);
                 ErrorResponse(req, HttpStatusCode.InternalServerError, AisErrorCode.InternalError, "Internal Server Error");
                 return;
             }
