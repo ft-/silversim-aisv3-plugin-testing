@@ -73,7 +73,7 @@ namespace SilverSim.AISv3.Client
             throw new NotSupportedException();
         }
 
-        public override void Remove(UUID scopeID, UUID accountID)
+        public override void Remove(UUID accountID)
         {
             throw new NotSupportedException();
         }

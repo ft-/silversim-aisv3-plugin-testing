@@ -25,10 +25,9 @@ using SilverSim.Main.Common.HttpServer;
 using SilverSim.ServiceInterfaces;
 using SilverSim.ServiceInterfaces.Account;
 using SilverSim.ServiceInterfaces.Inventory;
-using SilverSim.ServiceInterfaces.Presence;
-using SilverSim.ServiceInterfaces.Traveling;
+using SilverSim.ServiceInterfaces.UserSession;
 using SilverSim.Types;
-using SilverSim.Types.TravelingData;
+using SilverSim.Types.UserSession;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net;
@@ -39,12 +38,10 @@ namespace SilverSim.AISv3.Server
     [Description("AISv3 user inventory server")]
     public class UserServerInventoryAPIv3 : IPlugin, ILoginUserCapsGetInterface
     {
-        private PresenceServiceInterface m_PresenceService;
-        private TravelingDataServiceInterface m_TravelingDataService;
+        private UserSessionServiceInterface m_UserSessionService;
         private InventoryServiceInterface m_InventoryService;
         private UserAccountServiceInterface m_UserAccountService;
-        private readonly string m_PresenceServiceName;
-        private readonly string m_TravelingDataServiceName;
+        private readonly string m_UserSessionServiceName;
         private readonly string m_InventoryServiceName;
         private readonly string m_UserAccountServiceName;
         private BaseHttpServer m_HttpServer;
@@ -53,16 +50,14 @@ namespace SilverSim.AISv3.Server
         /* prefix url is /CAPS/InventoryAPIv3/<agentid>/ */
         public UserServerInventoryAPIv3(IConfig ownSection)
         {
-            m_PresenceServiceName = ownSection.GetString("PresenceService", "PresenceService");
-            m_TravelingDataServiceName = ownSection.GetString("TravelingDataService", "TravelingDataService");
+            m_UserSessionServiceName = ownSection.GetString("UserSessionService", "UserSessionService");
             m_InventoryServiceName = ownSection.GetString("InventoryService", "InventoryService");
             m_UserAccountServiceName = ownSection.GetString("UserAccountService", "UserAccountService");
         }
 
         public void Startup(ConfigurationLoader loader)
         {
-            m_PresenceService = loader.GetService<PresenceServiceInterface>(m_PresenceServiceName);
-            m_TravelingDataService = loader.GetService<TravelingDataServiceInterface>(m_TravelingDataServiceName);
+            m_UserSessionService = loader.GetService<UserSessionServiceInterface>(m_UserSessionServiceName);
 
             m_InventoryService = loader.GetService<InventoryServiceInterface>(m_InventoryServiceName);
             m_UserAccountService = loader.GetService<UserAccountServiceInterface>(m_UserAccountServiceName);
@@ -94,21 +89,14 @@ namespace SilverSim.AISv3.Server
 
             bool foundIP = false;
             UUID agent = UUID.Zero;
-            try
+            UserSessionInfo userSession;
+            if(m_UserSessionService.TryGetSecureValue(sessionid, out userSession) && userSession.ClientIPAddress == req.CallerIP)
             {
-                TravelingDataInfo trv = m_TravelingDataService.GetTravelingData(sessionid);
-                if(trv.ClientIPAddress == req.CallerIP)
-                {
-                    agent = trv.UserID;
-                    foundIP = true;
-                }
-            }
-            catch
-            {
-                /* entry not found */
+                agent = userSession.User.ID;
+                foundIP = true;
             }
 
-            if(!foundIP || !m_UserAccountService.ContainsKey(UUID.Zero, agent))
+            if(!foundIP || !m_UserAccountService.ContainsKey(agent))
             {
                 req.ErrorResponse(HttpStatusCode.NotFound, "Not found");
                 return;
