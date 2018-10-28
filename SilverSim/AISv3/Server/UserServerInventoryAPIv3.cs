@@ -90,7 +90,7 @@ namespace SilverSim.AISv3.Server
             bool foundIP = false;
             UUID agent = UUID.Zero;
             UserSessionInfo userSession;
-            if(m_UserSessionService.TryGetSecureValue(sessionid, out userSession) && userSession.ClientIPAddress == req.CallerIP)
+            if(m_UserSessionService.TryGetValue(sessionid, out userSession) && userSession.ClientIPAddress == req.CallerIP)
             {
                 agent = userSession.User.ID;
                 foundIP = true;
