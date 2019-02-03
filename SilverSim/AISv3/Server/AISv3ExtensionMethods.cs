@@ -153,13 +153,13 @@ namespace SilverSim.AISv3.Server
             Map perm_info;
             if (item_map.TryGetValue("permissions", out perm_info))
             {
-                if (perm_info.TryGetValue("owner_mask", out intval))
-                {
-                    item.Permissions.Current = (InventoryPermissionsMask)intval.AsInt;
-                }
                 if (perm_info.TryGetValue("base_mask", out intval))
                 {
                     item.Permissions.Base = (InventoryPermissionsMask)intval.AsInt;
+                }
+                if (perm_info.TryGetValue("owner_mask", out intval))
+                {
+                    item.Permissions.Current = (InventoryPermissionsMask)intval.AsInt;
                 }
                 if (perm_info.TryGetValue("next_owner_mask", out intval))
                 {
