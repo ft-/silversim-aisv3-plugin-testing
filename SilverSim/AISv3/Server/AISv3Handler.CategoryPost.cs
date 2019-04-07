@@ -73,7 +73,9 @@ namespace SilverSim.AISv3.Server
             resdata.Add("_embedded", reqmap);
             var created_categories = new AnArray();
             var created_items = new AnArray();
+            var updated_categories = new AnArray();
             resdata.Add("_created_categories", created_categories);
+            resdata.Add("_updated_category_versions", updated_categories);
             resdata.Add("_created_items", created_items);
             var resfolders = new Map();
 
@@ -106,6 +108,10 @@ namespace SilverSim.AISv3.Server
                                 InventoryItem item = itemdata.ItemFromAisV3(req.Agent, toParentFolderId, req.FullPrefixUrl);
                                 req.InventoryService.Item.Add(item);
                                 created_items.Add(item.ID);
+                                if (!updated_categories.Contains(toParentFolderId))
+                                {
+                                    updated_categories.Add(toParentFolderId);
+                                }
                                 newitems.Add(item.ID.ToString(), itemdata);
                             }
                             catch
@@ -131,6 +137,10 @@ namespace SilverSim.AISv3.Server
                                 InventoryItem link = linkdata.ItemFromAisV3(req.Agent, toParentFolderId, req.FullPrefixUrl);
                                 req.InventoryService.Item.Add(link);
                                 created_items.Add(link.ID);
+                                if (!updated_categories.Contains(toParentFolderId))
+                                {
+                                    updated_categories.Add(toParentFolderId);
+                                }
                                 newlinks.Add(link.ID.ToString(), linkdata);
                             }
                             catch
@@ -157,6 +167,10 @@ namespace SilverSim.AISv3.Server
                                 req.InventoryService.Folder.Add(newfolder);
                                 created_categories.Add(newfolder.ID);
                                 stack.Add(categorydata);
+                                if (!updated_categories.Contains(toParentFolderId))
+                                {
+                                    updated_categories.Add(toParentFolderId);
+                                }
                                 newcategories.Add(newfolder.ID.ToString(), categorydata);
                             }
                             catch
