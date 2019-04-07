@@ -172,7 +172,7 @@ namespace SilverSim.AISv3.Server
                 category_items_removed.Add(item.ID);
             }
 
-            if (req.InventoryService.Folder.TryGetValue(folder.ID, out folder))
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, folder.ID, out folder))
             {
                 updated_category_versions.Add(folder.ID.ToString(), folder.Version);
             }

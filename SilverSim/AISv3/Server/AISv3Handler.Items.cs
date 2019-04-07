@@ -234,7 +234,7 @@ namespace SilverSim.AISv3.Server
             resdata.Add("_base_uri", req.FullPrefixUrl + "/item/" + item.ID.ToString());
             resdata.Add("_updated_items", new AnArray { item.ID });
             InventoryFolder parentFolder;
-            if (req.InventoryService.Folder.TryGetValue(item.ParentFolderID, out parentFolder))
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, item.ParentFolderID, out parentFolder))
             {
                 resdata.Add("_updated_category_versions", new Map { { parentFolder.ID.ToString(), parentFolder.Version } });
             }
@@ -250,7 +250,7 @@ namespace SilverSim.AISv3.Server
                 resdata.Add("_embedded", embedded);
                 resdata.Add("_broken", false);
             }
-            else if(item.AssetType == AssetType.LinkFolder && req.InventoryService.Folder.TryGetValue(item.AssetID, out linkedfolder))
+            else if(item.AssetType == AssetType.LinkFolder && req.InventoryService.Folder.TryGetValue(req.Agent.ID, item.AssetID, out linkedfolder))
             {
                 Map itemdata = linkedfolder.ToAisV3(req.FullPrefixUrl);
                 var embedded = new Map

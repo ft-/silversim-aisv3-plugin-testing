@@ -153,7 +153,7 @@ namespace SilverSim.AISv3.Server
             {
                 return true;
             }
-            if(request.InventoryService.Folder.TryGetValue(request.Agent.ID, out folder))
+            if(request.InventoryService.Folder.TryGetValue(request.Agent.ID, folderId, out folder))
             {
                 folderCache.Add(folder.ID, folder);
                 return true;

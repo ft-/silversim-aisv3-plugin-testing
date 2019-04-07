@@ -107,7 +107,7 @@ namespace SilverSim.AISv3.Server
                     else
                     {
                         InventoryFolder linkedfolder;
-                        if (req.InventoryService.Folder.TryGetValue(item.AssetID, out linkedfolder))
+                        if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, item.AssetID, out linkedfolder))
                         {
                             Map linkedfolderdata = linkedfolder.ToAisV3(req.FullPrefixUrl);
                             linkembedded.Add("item", linkedfolderdata);
@@ -217,7 +217,7 @@ namespace SilverSim.AISv3.Server
                     addeditems.Add(item.ID);
                     linkedids.Add(item.ID.ToString(), item.AssetID.ToString());
                 }
-                else if(item.AssetType == AssetType.LinkFolder && req.InventoryService.Folder.TryGetValue(item.AssetID, out linkedfolder))
+                else if(item.AssetType == AssetType.LinkFolder && req.InventoryService.Folder.TryGetValue(req.Agent.ID, item.AssetID, out linkedfolder))
                 {
                     item.InventoryType = InventoryType.Unknown;
                     itemdata = item.ToAisV3(req.FullPrefixUrl);
@@ -231,7 +231,7 @@ namespace SilverSim.AISv3.Server
                 }
             }
 
-            if (req.InventoryService.Folder.TryGetValue(folder.ID, out folder))
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, folder.ID, out folder))
             {
                 updated_category_versions.Add(folder.ID.ToString(), folder.Version);
             }
@@ -294,7 +294,7 @@ namespace SilverSim.AISv3.Server
                 category_items_removed.Add(item.ID);
             }
 
-            if (req.InventoryService.Folder.TryGetValue(folder.ID, out folder))
+            if (req.InventoryService.Folder.TryGetValue(req.Agent.ID, folder.ID, out folder))
             {
                 updated_category_versions.Add(folder.ID.ToString(), folder.Version);
             }
