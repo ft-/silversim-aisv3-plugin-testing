@@ -112,7 +112,7 @@ namespace SilverSim.AISv3.Server
                                 {
                                     updated_categories.Add(toParentFolderId);
                                 }
-                                newitems.Add(item.ID.ToString(), itemdata);
+                                newitems.Add(item.ID.ToString(), item.ToAisV3(req.FullPrefixUrl));
                             }
                             catch
                             {
@@ -171,7 +171,7 @@ namespace SilverSim.AISv3.Server
                                 {
                                     updated_categories.Add(toParentFolderId);
                                 }
-                                newcategories.Add(newfolder.ID.ToString(), categorydata);
+                                newcategories.Add(newfolder.ID.ToString(), newfolder.ToAisV3(req.FullPrefixUrl));
                             }
                             catch
                             {
