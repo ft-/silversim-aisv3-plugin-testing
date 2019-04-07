@@ -141,11 +141,7 @@ namespace SilverSim.AISv3.Server
                                 {
                                     updated_categories.Add(toParentFolderId);
                                 }
-                                linkdata.Add("item_id", link.ID);
-                                linkdata.Add("parent_id", link.ParentFolderID);
-                                linkdata.Add("agent_id", link.Owner.ID);
-                                linkdata.Add("created_at", link.CreationDate.DateTimeToUnixTime().ToString());
-                                newlinks.Add(link.ID.ToString(), linkdata);
+                                newlinks.Add(link.ID.ToString(), link.ToAisV3(req.FullPrefixUrl));
                             }
                             catch
                             {
