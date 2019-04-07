@@ -169,7 +169,7 @@ namespace SilverSim.AISv3.Server
                 }
             }
 
-            SuccessResponse(req, HttpStatusCode.Created, resdata);
+            SuccessResponse(req, HttpStatusCode.Created, resdata, req.FullPrefixUrl + "/category/" + folder.ID.ToString() + "/children");
         }
     }
 }

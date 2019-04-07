@@ -220,7 +220,7 @@ namespace SilverSim.AISv3.Server
             folder.Version = 1;
             var linkref = new Map
             {
-                { "self", ToAisV3Href(fullprefixuri + "/item/" + folder.ID.ToString()) },
+                { "self", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString()) },
                 { "parent", ToAisV3Href(fullprefixuri + "/category/" + folder.ParentFolderID.ToString()) },
                 { "links", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString() + "/links") },
                 { "items", ToAisV3Href(fullprefixuri + "/category/" + folder.ID.ToString() + "/items") },

@@ -97,7 +97,7 @@ namespace SilverSim.AISv3.Server
             }
         }
 
-        private static void SuccessResponse(Request req, HttpStatusCode statuscode, Map m)
+        private static void SuccessResponse(Request req, HttpStatusCode statuscode, Map m, string location = null)
         {
             byte[] buffer;
             using (var ms = new MemoryStream())
@@ -108,9 +108,13 @@ namespace SilverSim.AISv3.Server
             using (HttpResponse res = req.HttpRequest.BeginResponse(statuscode, statuscode.ToString()))
             {
                 res.ContentType = "application/llsd+xml";
+                if(location != null)
+                {
+                    res.Headers["Location"] = location;
+                }
                 using (Stream o = res.GetOutputStream(buffer.Length))
                 {
-                    o.Write(buffer, 0, (int)buffer.Length);
+                    o.Write(buffer, 0, buffer.Length);
                 }
             }
         }
